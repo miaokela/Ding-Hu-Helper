@@ -1,0 +1,115 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 现代橙红渐变 -->
+    <linearGradient id="modernGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b6b;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#ee5a24;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#ff7675;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fd79a8;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 高光渐变 -->
+    <radialGradient id="highlightGradient" cx="30%" cy="20%" r="80%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.8" />
+      <stop offset="50%" style="stop-color:#ffffff;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+    </radialGradient>
+    
+    <!-- 文字渐变 -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#f8f9fa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e9ecef;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- 阴影效果 -->
+    <filter id="dropShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8"/>
+      <feOffset dx="0" dy="8" result="offset"/>
+      <feFlood flood-color="#000000" flood-opacity="0.25"/>
+      <feComposite in2="offset" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- 文字阴影 -->
+    <filter id="textShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
+      <feOffset dx="0" dy="3" result="offset"/>
+      <feFlood flood-color="#000000" flood-opacity="0.3"/>
+      <feComposite in2="offset" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- 背景正方形带圆角 -->
+  <rect x="56" y="56" width="400" height="400" rx="80" ry="80" 
+        fill="url(#modernGradient)" 
+        filter="url(#dropShadow)"/>
+  
+  <!-- 高光效果 -->
+  <rect x="56" y="56" width="400" height="400" rx="80" ry="80" 
+        fill="url(#highlightGradient)" 
+        opacity="0.7"/>
+  
+  <!-- 大写字母 D (以此为中心基准，图标中心为256,256，向下微调) -->
+  <text x="220" y="330" 
+        font-family="Helvetica, Arial, sans-serif" 
+        font-size="220" 
+        font-weight="bold" 
+        text-anchor="middle" 
+        fill="url(#textGradient)"
+        filter="url(#textShadow)">D</text>
+  
+  <!-- 小写字母 ing (底部与D对齐，更靠左) -->
+  <text x="310" y="330" 
+        font-family="Helvetica, Arial, sans-serif" 
+        font-size="65" 
+        font-weight="600" 
+        text-anchor="start" 
+        fill="url(#textGradient)"
+        filter="url(#textShadow)"
+        opacity="0.9">ing</text>
+  
+  <!-- 亮晶晶气泡效果 -->
+  <circle cx="160" cy="200" r="4" fill="#ffffff" opacity="0.8">
+    <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="180" cy="180" r="2.5" fill="#ffffff" opacity="0.6">
+    <animate attributeName="opacity" values="0.2;0.6;0.2" dur="1.5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="140" cy="220" r="1.5" fill="#ffffff" opacity="0.4">
+    <animate attributeName="opacity" values="0.1;0.4;0.1" dur="1.8s" repeatCount="indefinite"/>
+  </circle>
+  
+  <circle cx="380" cy="180" r="5" fill="#ffffff" opacity="0.7">
+    <animate attributeName="opacity" values="0.2;0.7;0.2" dur="2.2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="400" cy="160" r="3" fill="#ffffff" opacity="0.5">
+    <animate attributeName="opacity" values="0.1;0.5;0.1" dur="1.7s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="360" cy="160" r="2" fill="#ffffff" opacity="0.6">
+    <animate attributeName="opacity" values="0.2;0.6;0.2" dur="1.9s" repeatCount="indefinite"/>
+  </circle>
+  
+  <circle cx="300" cy="380" r="3.5" fill="#ffffff" opacity="0.5">
+    <animate attributeName="opacity" values="0.1;0.5;0.1" dur="2.1s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="320" cy="400" r="2" fill="#ffffff" opacity="0.4">
+    <animate attributeName="opacity" values="0.1;0.4;0.1" dur="1.6s" repeatCount="indefinite"/>
+  </circle>
+  
+  <circle cx="120" cy="300" r="2.5" fill="#ffffff" opacity="0.6">
+    <animate attributeName="opacity" values="0.2;0.6;0.2" dur="2.3s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- 装饰圆点 (原有的静态点) -->
+  <circle cx="380" cy="220" r="5" fill="#ffffff" opacity="0.6"/>
+  <circle cx="395" cy="205" r="3" fill="#ffffff" opacity="0.4"/>
+  <circle cx="365" cy="205" r="2.5" fill="#ffffff" opacity="0.5"/>
+</svg>

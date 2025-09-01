@@ -1,0 +1,18 @@
+{
+  "version": "1.0.0",
+  "buildTime": "2025-08-20T04:39:39.167Z",
+  "securityOptimized": true,
+  "features": {
+    "protocolRegistration": false,
+    "registryModification": false,
+    "adminPrivileges": false,
+    "dialogInterception": true,
+    "webContentFiltering": true
+  },
+  "compatibleWith": [
+    "360安全卫士",
+    "腾讯电脑管家",
+    "Windows Defender",
+    "火绒安全软件"
+  ]
+}

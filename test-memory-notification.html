@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>内存保护提示预览</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* 弹窗动画 */
+    @keyframes bounce-in {
+      0% {
+        opacity: 0;
+        transform: scale(0.8) translateY(-20px);
+      }
+      50% {
+        opacity: 0.8;
+        transform: scale(1.05) translateY(-5px);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .animate-bounce-in {
+      animation: bounce-in 0.4s ease-out;
+    }
+
+    /* 背景模糊渐入 */
+    .bg-fade-in {
+      animation: fade-in 0.3s ease-out;
+    }
+
+    @keyframes fade-in {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body class="bg-gray-900 min-h-screen flex items-center justify-center p-4">
+  
+  <!-- 测试按钮 -->
+  <div class="text-center mb-8">
+    <h1 class="text-white text-2xl mb-4">内存保护提示预览</h1>
+    <button 
+      onclick="showNotification()" 
+      class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+    >
+      🚨 触发内存保护提示
+    </button>
+  </div>
+
+  <!-- 内存保护提示弹窗 -->
+  <div 
+    id="notification" 
+    class="fixed inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm bg-fade-in hidden"
+    onclick="closeNotification()"
+  >
+    <div 
+      class="bg-gradient-to-br from-red-900/90 to-orange-900/90 backdrop-blur-md border border-red-500/50 rounded-xl p-6 max-w-md mx-4 shadow-2xl animate-bounce-in"
+      onclick="event.stopPropagation()"
+    >
+      <!-- 标题 -->
+      <div class="flex items-center mb-4">
+        <div class="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center mr-4">
+          <svg class="w-6 h-6 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-white">🛡️ 内存保护已激活</h3>
+          <p class="text-red-200 text-sm">系统内存使用率过高</p>
+        </div>
+      </div>
+      
+      <!-- 内容 -->
+      <div class="mb-6">
+        <div class="bg-black/20 rounded-lg p-4 mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-red-200 text-sm">内存使用率</span>
+            <span class="text-red-400 font-bold text-lg" id="memoryPercent">94.2%</span>
+          </div>
+          <div class="w-full bg-gray-800 rounded-full h-2">
+            <div 
+              class="h-2 rounded-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-500"
+              id="memoryBar"
+              style="width: 94%"
+            ></div>
+          </div>
+        </div>
+        
+        <p class="text-white text-sm leading-relaxed">
+          为了保护系统稳定性，已自动关闭除当前激活标签页外的所有其他标签页。
+          <span class="block mt-2 text-orange-200">
+            📊 已释放 <span class="font-semibold" id="closedTabs">5</span> 个标签页
+          </span>
+        </p>
+      </div>
+      
+      <!-- 按钮 -->
+      <div class="flex space-x-3">
+        <button
+          onclick="closeNotification()"
+          class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center justify-center"
+        >
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+          我知道了
+        </button>
+        <button
+          onclick="viewDetails()"
+          class="flex-1 bg-gray-700/50 hover:bg-gray-600/50 text-gray-200 font-medium py-2.5 px-4 rounded-lg transition-all duration-200 flex items-center justify-center"
+        >
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H9a2 2 0 01-2-2z"></path>
+          </svg>
+          查看详情
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function showNotification() {
+      // 随机生成内存使用率和关闭标签页数量
+      const memoryPercent = (90 + Math.random() * 10).toFixed(1);
+      const closedTabs = Math.floor(Math.random() * 8) + 2;
+      
+      document.getElementById('memoryPercent').textContent = memoryPercent + '%';
+      document.getElementById('memoryBar').style.width = memoryPercent + '%';
+      document.getElementById('closedTabs').textContent = closedTabs;
+      
+      document.getElementById('notification').classList.remove('hidden');
+    }
+    
+    function closeNotification() {
+      document.getElementById('notification').classList.add('hidden');
+    }
+    
+    function viewDetails() {
+      alert('查看内存详情功能');
+      closeNotification();
+    }
+    
+    // 自动显示提示（演示用）
+    setTimeout(showNotification, 1000);
+  </script>
+</body>
+</html>

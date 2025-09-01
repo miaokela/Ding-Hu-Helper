@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统认证功能测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+        .feature-list {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .feature-list h3 {
+            color: #333;
+            margin-top: 0;
+        }
+        .feature-list ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .feature-list li {
+            margin: 8px 0;
+            color: #555;
+        }
+        .platform-support {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .platform-card {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #bee5eb;
+        }
+        .platform-card h4 {
+            margin: 0 0 10px 0;
+            color: #0c5460;
+        }
+        .platform-card p {
+            margin: 5px 0;
+            color: #0c5460;
+            font-size: 14px;
+        }
+        .security-note {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        .security-note h3 {
+            margin-top: 0;
+            color: white;
+        }
+        .code-example {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            overflow-x: auto;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 系统账号密码校验功能</h1>
+            <p>为 Multi-Browser 应用添加系统用户身份验证</p>
+        </div>
+
+        <div class="feature-list">
+            <h3>✨ 功能特性</h3>
+            <ul>
+                <li><strong>多平台支持</strong> - 支持 Windows、macOS 和 Linux 系统</li>
+                <li><strong>本地验证</strong> - 使用系统本地用户密码进行验证</li>
+                <li><strong>安全可靠</strong> - 密码不会被存储或传输到网络</li>
+                <li><strong>用户友好</strong> - 美观的界面和良好的用户体验</li>
+                <li><strong>智能检测</strong> - 自动检测系统支持情况</li>
+                <li><strong>错误处理</strong> - 完善的错误提示和重试机制</li>
+            </ul>
+        </div>
+
+        <div class="platform-support">
+            <div class="platform-card">
+                <h4>🪟 Windows</h4>
+                <p>使用 PowerShell 的 AccountManagement</p>
+                <p>验证本地用户凭据</p>
+            </div>
+            <div class="platform-card">
+                <h4>🍎 macOS</h4>
+                <p>使用 AppleScript 和 sudo</p>
+                <p>安全的系统级验证</p>
+            </div>
+            <div class="platform-card">
+                <h4>🐧 Linux</h4>
+                <p>使用 sudo 命令验证</p>
+                <p>支持大部分发行版</p>
+            </div>
+        </div>
+
+        <div class="security-note">
+            <h3>🔒 安全性说明</h3>
+            <p><strong>密码安全：</strong> 用户输入的密码仅用于本地验证，不会被存储、记录或传输到任何服务器。</p>
+            <p><strong>权限控制：</strong> 只有输入正确系统密码的用户才能使用应用，确保应用只能被系统的合法用户访问。</p>
+            <p><strong>进程安全：</strong> 认证过程使用系统级安全机制，避免密码泄露风险。</p>
+        </div>
+
+        <div class="feature-list">
+            <h3>🚀 使用流程</h3>
+            <ol>
+                <li><strong>启动应用</strong> - 应用启动时自动检查系统认证支持</li>
+                <li><strong>显示登录界面</strong> - 如果支持系统认证，显示密码输入界面</li>
+                <li><strong>输入密码</strong> - 用户输入当前系统用户的登录密码</li>
+                <li><strong>验证密码</strong> - 应用调用系统API验证密码正确性</li>
+                <li><strong>访问应用</strong> - 验证成功后用户可以正常使用应用</li>
+            </ol>
+        </div>
+
+        <div class="warning">
+            <h4>⚠️ 注意事项</h4>
+            <ul>
+                <li>首次使用时系统可能会询问权限，请选择允许</li>
+                <li>在 macOS 上可能需要在"系统偏好设置 → 安全性与隐私"中授权</li>
+                <li>如果连续输入错误密码，建议重启应用</li>
+                <li>不支持系统认证的平台会自动跳过验证步骤</li>
+            </ul>
+        </div>
+
+        <div class="feature-list">
+            <h3>📝 技术实现</h3>
+            
+            <h4>主要组件：</h4>
+            <div class="code-example">
+electron/system-auth.ts     # 系统认证核心模块
+src/components/system-auth/ # Vue认证组件
+electron/main.ts           # 主进程IPC处理
+            </div>
+
+            <h4>API接口：</h4>
+            <div class="code-example">
+systemAuthGetCurrentUser()    # 获取当前用户信息
+systemAuthVerifyPassword()    # 验证用户密码
+systemAuthCheckSupport()      # 检查平台支持
+            </div>
+        </div>
+
+        <div class="feature-list">
+            <h3>🔧 配置选项</h3>
+            <p>可以通过修改代码来调整以下行为：</p>
+            <ul>
+                <li><strong>跳过认证：</strong> 在不支持的平台上自动跳过</li>
+                <li><strong>重试次数：</strong> 密码输入错误的重试机制</li>
+                <li><strong>超时设置：</strong> 认证过程的超时时间</li>
+                <li><strong>界面主题：</strong> 登录界面的样式和主题</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px; color: #666;">
+            <p>💡 此功能增强了应用的安全性，确保只有系统的合法用户才能访问应用</p>
+        </div>
+    </div>
+</body>
+</html>

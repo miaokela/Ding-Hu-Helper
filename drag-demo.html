@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标签页拖拽功能演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .demo-section {
+            padding: 30px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #4f46e5;
+            margin-right: 12px;
+            border-radius: 2px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 30px;
+        }
+
+        .feature-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .feature-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .feature-desc {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .tab-demo {
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .demo-tabs {
+            display: flex;
+            gap: 2px;
+            background: #e2e8f0;
+            padding: 4px;
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+
+        .demo-tab {
+            flex: 1;
+            padding: 12px 16px;
+            background: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: #64748b;
+        }
+
+        .demo-tab.active {
+            background: #4f46e5;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .instructions {
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .instructions h3 {
+            color: #065f46;
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .instructions h3::before {
+            content: '💡';
+            margin-right: 8px;
+        }
+
+        .instructions ul {
+            color: #047857;
+            font-size: 14px;
+            line-height: 1.6;
+            padding-left: 20px;
+        }
+
+        .instructions li {
+            margin-bottom: 4px;
+        }
+
+        .tech-specs {
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 20px;
+        }
+
+        .tech-specs h3 {
+            color: #92400e;
+            font-size: 16px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+
+        .tech-specs h3::before {
+            content: '⚙️';
+            margin-right: 8px;
+        }
+
+        .tech-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 8px;
+            color: #b45309;
+            font-size: 14px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-indicator::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #3b82f6;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .footer {
+            background: #f8fafc;
+            border-top: 1px solid #e2e8f0;
+            padding: 20px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌐 Multi-Browser 标签页拖拽功能</h1>
+            <p>支持域名标签页和WebView标签页的拖拽重排序和分离窗口功能</p>
+        </div>
+
+        <div class="demo-section">
+            <div class="section-title">🚀 核心功能特性</div>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔄</div>
+                    <div class="feature-title">标签页重排序</div>
+                    <div class="feature-desc">拖拽标签页到不同位置，实时重新排序，支持域名标签页和WebView标签页</div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🪟</div>
+                    <div class="feature-title">分离新窗口</div>
+                    <div class="feature-desc">将标签页拖拽到容器外部，自动分离为独立窗口，提升多任务处理效率</div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <div class="feature-title">智能识别</div>
+                    <div class="feature-desc">自动识别拖拽意图，提供视觉反馈，区分重排序和分离操作</div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">✨</div>
+                    <div class="feature-title">流畅体验</div>
+                    <div class="feature-desc">丝滑的动画效果，直观的视觉提示，符合现代浏览器的交互习惯</div>
+                </div>
+            </div>
+
+            <div class="tab-demo">
+                <div class="demo-tabs">
+                    <button class="demo-tab active">域名1: 电商平台</button>
+                    <button class="demo-tab">域名2: 社交媒体</button>
+                    <button class="demo-tab">域名3: 开发工具</button>
+                    <button class="demo-tab">域名4: 文档编辑</button>
+                </div>
+                <div class="status-indicator">拖拽功能已启用</div>
+            </div>
+
+            <div class="instructions">
+                <h3>使用说明</h3>
+                <ul>
+                    <li><strong>重新排序：</strong>在标签页栏内拖拽标签页到目标位置，松开鼠标完成排序</li>
+                    <li><strong>分离窗口：</strong>将标签页拖拽到容器外部区域，松开鼠标创建新窗口</li>
+                    <li><strong>视觉提示：</strong>蓝色边框表示重排序目标，红色边框表示即将分离</li>
+                    <li><strong>自动处理：</strong>系统自动保存排序状态，新窗口继承原有的配置信息</li>
+                </ul>
+            </div>
+
+            <div class="tech-specs">
+                <h3>技术实现</h3>
+                <div class="tech-list">
+                    <div>• HTML5 Drag & Drop API</div>
+                    <div>• Vue 3 组合式API</div>
+                    <div>• 响应式数据绑定</div>
+                    <div>• CSS3 动画效果</div>
+                    <div>• Electron 窗口管理</div>
+                    <div>• TypeScript 类型安全</div>
+                </div>
+            </div>
+
+            <div class="section-title">🎨 交互体验优化</div>
+            
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🖱️</div>
+                    <div class="feature-title">鼠标交互</div>
+                    <div class="feature-desc">支持精确的鼠标拖拽操作，提供即时的视觉反馈和状态指示</div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <div class="feature-title">触摸支持</div>
+                    <div class="feature-desc">兼容触摸屏设备，支持触摸拖拽操作，适配移动端使用场景</div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">🔒</div>
+                    <div class="feature-title">状态保持</div>
+                    <div class="feature-desc">拖拽操作后自动保存标签页状态，确保数据一致性和用户体验</div>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">⚡</div>
+                    <div class="feature-title">性能优化</div>
+                    <div class="feature-desc">高效的事件处理机制，最小化DOM操作，确保流畅的拖拽体验</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Multi-Browser 项目 © 2025 | 标签页拖拽功能现已完成实现</p>
+        </div>
+    </div>
+
+    <script>
+        // 添加标签页交互演示
+        document.querySelectorAll('.demo-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.demo-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+
+        // 模拟拖拽效果演示
+        let isDragging = false;
+        
+        document.querySelectorAll('.demo-tab').forEach(tab => {
+            tab.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                tab.style.cursor = 'grabbing';
+                tab.style.transform = 'rotate(2deg) scale(0.98)';
+                tab.style.opacity = '0.8';
+            });
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                document.querySelectorAll('.demo-tab').forEach(tab => {
+                    tab.style.cursor = 'pointer';
+                    tab.style.transform = '';
+                    tab.style.opacity = '';
+                });
+                isDragging = false;
+            }
+        });
+
+        console.log('✅ 标签页拖拽功能演示页面已加载');
+        console.log('🔧 技术栈: Vue 3 + TypeScript + Electron + HTML5 Drag API');
+        console.log('🚀 功能: 标签页重排序 + 分离新窗口');
+    </script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebView右键菜单测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .test-area {
+            border: 2px solid #ccc;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .highlight {
+            background-color: yellow;
+            padding: 2px 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebView右键菜单功能测试</h1>
+    
+    <div class="test-area">
+        <h2>测试说明</h2>
+        <p>在webview中右键点击可以看到自定义的上下文菜单，包含以下功能：</p>
+        <ul>
+            <li><strong>刷新</strong> - 普通刷新页面 (Ctrl+R)</li>
+            <li><strong>强制刷新</strong> - 忽略缓存刷新 (Ctrl+Shift+R)</li>
+            <li><strong>后退/前进</strong> - 浏览历史导航</li>
+            <li><strong>复制链接</strong> - 当右键点击链接时显示</li>
+            <li><strong>复制图片</strong> - 当右键点击图片时显示</li>
+            <li><strong>复制</strong> - 当选中文本时显示</li>
+            <li><strong>检查元素</strong> - 打开开发者工具并定位元素</li>
+        </ul>
+    </div>
+
+    <div class="test-area">
+        <h2>测试元素</h2>
+        <p>这是一段可以选中的文本，<span class="highlight">请选中这段文字然后右键</span>测试复制功能。</p>
+        
+        <p>这是一个测试链接：<a href="https://www.baidu.com" target="_blank">百度首页</a>，右键点击可以复制链接。</p>
+        
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23007ACC'/%3E%3Ctext x='50' y='55' text-anchor='middle' fill='white' font-family='Arial' font-size='12'%3E测试图片%3C/text%3E%3C/svg%3E" alt="测试图片" style="display: block; margin: 10px 0;">
+        
+        <p>右键点击上面的图片可以测试复制图片功能。</p>
+    </div>
+
+    <div class="test-area">
+        <h2>刷新测试</h2>
+        <p>当前时间：<span id="timestamp"></span></p>
+        <p>右键选择"刷新"或"强制刷新"可以重新加载页面，时间戳会更新。</p>
+    </div>
+
+    <script>
+        // 显示当前时间戳
+        document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        
+        // 每秒更新时间
+        setInterval(() => {
+            document.getElementById('timestamp').textContent = new Date().toLocaleString();
+        }, 1000);
+        
+        console.log('WebView右键菜单测试页面已加载');
+    </script>
+</body>
+</html>

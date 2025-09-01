@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebView内存统计测试</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-6">
+  
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6 text-center">📊 WebView内存统计功能验证</h1>
+    
+    <!-- 模拟内存监控面板 -->
+    <div class="bg-gray-800 rounded-lg p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4 text-blue-400">🔍 改进后的内存统计</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        
+        <!-- 系统内存 -->
+        <div class="bg-gray-700/50 rounded-lg p-4">
+          <h3 class="text-sm font-medium text-gray-300 mb-2">系统内存</h3>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-400">使用率</span>
+            <span class="text-orange-400 font-bold text-lg">78.5%</span>
+          </div>
+          <div class="w-full bg-gray-600 rounded-full h-2 mb-2">
+            <div class="h-2 rounded-full bg-orange-500" style="width: 78.5%"></div>
+          </div>
+          <p class="text-xs text-gray-500">12.6GB / 16.0GB</p>
+        </div>
+        
+        <!-- 应用内存 -->
+        <div class="bg-gray-700/50 rounded-lg p-4">
+          <h3 class="text-sm font-medium text-gray-300 mb-2">本应用内存</h3>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-400">总计</span>
+            <span class="text-blue-400 font-bold text-lg">2,847MB</span>
+          </div>
+          <div class="space-y-1 text-xs text-gray-400">
+            <div class="flex justify-between">
+              <span>主进程:</span>
+              <span class="text-blue-300">156MB</span>
+            </div>
+            <div class="flex justify-between">
+              <span>WebView:</span>
+              <span class="text-purple-300">2,691MB</span>
+            </div>
+            <div class="flex justify-between">
+              <span>占系统:</span>
+              <span class="text-orange-300">17.8%</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- WebView详情 -->
+        <div class="bg-gray-700/50 rounded-lg p-4">
+          <h3 class="text-sm font-medium text-gray-300 mb-2">WebView详情</h3>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs text-gray-400">数量</span>
+            <span class="text-purple-400 font-bold text-lg">8个</span>
+          </div>
+          <div class="space-y-1 text-xs max-h-20 overflow-y-auto">
+            <div class="flex justify-between items-center">
+              <span class="truncate text-gray-400" title="https://www.baidu.com">baidu.com</span>
+              <span class="text-purple-300">487MB</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="truncate text-gray-400" title="https://www.taobao.com">taobao.com</span>
+              <span class="text-purple-300">354MB</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="truncate text-gray-400" title="https://www.github.com">github.com</span>
+              <span class="text-purple-300">298MB</span>
+            </div>
+            <div class="text-gray-600 text-center">+5个...</div>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <!-- 对比说明 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+      <!-- 改进前 -->
+      <div class="bg-red-900/20 border border-red-500/30 rounded-lg p-6">
+        <h2 class="text-lg font-semibold mb-4 text-red-400">❌ 改进前的问题</h2>
+        <ul class="space-y-2 text-sm text-gray-300">
+          <li class="flex items-start">
+            <span class="text-red-400 mr-2">•</span>
+            <span>只统计系统级内存使用率</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-red-400 mr-2">•</span>
+            <span>应用内存只包含主进程</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-red-400 mr-2">•</span>
+            <span>忽略WebView的内存占用</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-red-400 mr-2">•</span>
+            <span>无法准确评估应用内存压力</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-red-400 mr-2">•</span>
+            <span>内存保护可能触发不及时</span>
+          </li>
+        </ul>
+      </div>
+      
+      <!-- 改进后 -->
+      <div class="bg-green-900/20 border border-green-500/30 rounded-lg p-6">
+        <h2 class="text-lg font-semibold mb-4 text-green-400">✅ 改进后的优势</h2>
+        <ul class="space-y-2 text-sm text-gray-300">
+          <li class="flex items-start">
+            <span class="text-green-400 mr-2">•</span>
+            <span>完整统计应用总内存占用</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-green-400 mr-2">•</span>
+            <span>分别显示主进程和WebView内存</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-green-400 mr-2">•</span>
+            <span>实时显示各WebView内存详情</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-green-400 mr-2">•</span>
+            <span>智能计算真实内存使用率</span>
+          </li>
+          <li class="flex items-start">
+            <span class="text-green-400 mr-2">•</span>
+            <span>更准确的内存保护触发</span>
+          </li>
+        </ul>
+      </div>
+      
+    </div>
+    
+    <!-- 技术说明 -->
+    <div class="bg-blue-900/20 border border-blue-500/30 rounded-lg p-6 mt-6">
+      <h2 class="text-lg font-semibold mb-4 text-blue-400">🔧 技术实现</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-300">
+        <div>
+          <h3 class="font-medium text-blue-300 mb-2">内存统计算法</h3>
+          <code class="bg-gray-800 p-2 rounded text-xs block">
+真实内存使用率 = max(<br>
+&nbsp;&nbsp;系统内存使用率,<br>
+&nbsp;&nbsp;应用内存占比<br>
+)
+          </code>
+        </div>
+        <div>
+          <h3 class="font-medium text-blue-300 mb-2">WebView内存获取</h3>
+          <code class="bg-gray-800 p-2 rounded text-xs block">
+// 尝试获取精确内存<br>
+memInfo = await webview.getProcessMemoryInfo()<br>
+// 失败则使用估算值(50MB/WebView)
+          </code>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 模拟警告 -->
+    <div class="bg-orange-900/30 border border-orange-500/50 rounded-lg p-4 mt-6">
+      <div class="flex items-center mb-2">
+        <svg class="w-5 h-5 text-orange-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+        </svg>
+        <span class="text-orange-400 font-medium">内存保护提醒</span>
+      </div>
+      <p class="text-orange-200 text-sm">
+        💡 应用占用17.8%系统内存，建议关闭不必要的WebView标签页以提升性能。
+      </p>
+    </div>
+    
+  </div>
+  
+</body>
+</html>

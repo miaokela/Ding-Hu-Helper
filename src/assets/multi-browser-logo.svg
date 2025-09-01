@@ -1,0 +1,132 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 粉红色渐变 -->
+    <radialGradient id="pinkGradient" cx="30%" cy="20%" r="80%">
+      <stop offset="0%" style="stop-color:#FF9CAE;stop-opacity:1" />
+      <stop offset="20%" style="stop-color:#FF6B9D;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#E91E63;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#880E4F;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- 阴影效果 -->
+    <filter id="dropShadow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="15"/>
+      <feOffset dx="0" dy="15" result="offset"/>
+      <feFlood flood-color="#000000" flood-opacity="0.4"/>
+      <feComposite in2="offset" operator="in"/>
+      <feMerge> 
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/> 
+      </feMerge>
+    </filter>
+    
+    <!-- 内部高光 -->
+    <radialGradient id="highlight" cx="20%" cy="10%" r="70%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:0.9" />
+      <stop offset="30%" style="stop-color:#FFFFFF;stop-opacity:0.5" />
+      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0" />
+    </radialGradient>
+    
+    <!-- 闪电渐变 -->
+    <linearGradient id="lightningGradient" x1="20%" y1="0%" x2="80%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="20%" style="stop-color:#FFF9C4;stop-opacity:1" />
+      <stop offset="60%" style="stop-color:#FFEB3B;stop-opacity:0.98" />
+      <stop offset="100%" style="stop-color:#FFC107;stop-opacity:0.95" />
+    </linearGradient>
+    
+    <!-- 闪电发光 -->
+    <filter id="lightningGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feMorphology operator="dilate" radius="3"/>
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- 主圆形 -->
+  <circle cx="256" cy="256" r="240" 
+          fill="url(#pinkGradient)" 
+          filter="url(#dropShadow)"/>
+  
+  <!-- 高光层 -->
+  <circle cx="256" cy="256" r="240" 
+          fill="url(#highlight)"/>
+  
+  <!-- 闪电图标 -->
+  <g transform="translate(256,256)">
+    <!-- 闪电主体 - 更优雅的形状 -->
+    <path d="M -20 -100
+             L 30 -100
+             L 10 -40
+             L 50 -40
+             L 20 20
+             L 5 20
+             L 15 -20
+             L -10 -20
+             L -20 -100 Z
+             
+             M -5 20
+             L 25 20
+             L 5 80
+             L -25 80
+             L -5 20 Z"
+          fill="url(#lightningGradient)"
+          stroke="rgba(255,255,255,0.95)"
+          stroke-width="5"
+          stroke-linejoin="round"
+          filter="url(#lightningGlow)"/>
+    
+    <!-- 闪电高光细节 -->
+    <path d="M -15 -90
+             L 5 -90
+             L -5 -60
+             L 15 -60
+             L 10 -40"
+          fill="none"
+          stroke="rgba(255,255,255,0.9)"
+          stroke-width="4"
+          stroke-linecap="round"/>
+    
+    <path d="M 0 30
+             L 15 30
+             L 0 60"
+          fill="none"
+          stroke="rgba(255,255,255,0.9)"
+          stroke-width="4"
+          stroke-linecap="round"/>
+    
+    <!-- 闪电边缘轮廓 -->
+    <path d="M -18 -95
+             L 25 -95
+             L 8 -45
+             L 45 -45
+             L 18 15
+             L 8 15
+             L 13 -25
+             L -8 -25
+             L -18 -95 Z
+             
+             M -3 25
+             L 20 25
+             L 3 75
+             L -20 75
+             L -3 25 Z"
+          fill="none"
+          stroke="rgba(0,0,0,0.1)"
+          stroke-width="1.5"/>
+  </g>
+  
+  <!-- 外圈装饰线 -->
+  <circle cx="256" cy="256" r="248" 
+          fill="none" 
+          stroke="rgba(255,255,255,0.5)" 
+          stroke-width="3"/>
+  
+  <circle cx="256" cy="256" r="232" 
+          fill="none" 
+          stroke="rgba(255,255,255,0.3)" 
+          stroke-width="1"/>
+</svg>

@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebView拖拽分离功能测试</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+
+        .demo-section {
+            padding: 40px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            margin-right: 15px;
+            border-radius: 2px;
+        }
+
+        .feature-showcase {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .feature-demo {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s ease;
+        }
+
+        .feature-demo:hover {
+            border-color: #4f46e5;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.1);
+        }
+
+        .feature-demo h3 {
+            color: #1f2937;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .feature-demo h3::before {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+
+        .feature-demo h3.drag-out::before {
+            content: '🪟';
+        }
+
+        .feature-demo h3.drag-back::before {
+            content: '🔄';
+        }
+
+        .demo-steps {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .demo-steps li {
+            padding: 8px 0;
+            padding-left: 25px;
+            position: relative;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+
+        .demo-steps li::before {
+            content: counter(step-counter);
+            counter-increment: step-counter;
+            position: absolute;
+            left: 0;
+            top: 8px;
+            background: #4f46e5;
+            color: white;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .demo-steps {
+            counter-reset: step-counter;
+        }
+
+        .visual-demo {
+            background: #ecfdf5;
+            border: 2px dashed #10b981;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .visual-demo h4 {
+            color: #047857;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .tab-simulation {
+            display: inline-flex;
+            background: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 5px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
+        .tab-simulation:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .tab-simulation:active {
+            cursor: grabbing;
+            transform: scale(0.95) rotate(2deg);
+        }
+
+        .tab-simulation.dragging {
+            border-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .detached-window {
+            background: white;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .tech-specs {
+            background: #fffbeb;
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .tech-specs h3 {
+            color: #92400e;
+            font-size: 18px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+
+        .tech-specs h3::before {
+            content: '⚙️';
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .tech-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+            color: #b45309;
+            font-size: 14px;
+        }
+
+        .tech-item {
+            background: rgba(251, 191, 36, 0.1);
+            padding: 8px 12px;
+            border-radius: 6px;
+            border-left: 3px solid #f59e0b;
+        }
+
+        .status-bar {
+            background: #1f2937;
+            color: white;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .implementation-note {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .implementation-note h4 {
+            color: #1e40af;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .implementation-note p {
+            color: #1e3a8a;
+            line-height: 1.6;
+        }
+
+        .warning-note {
+            background: #fef2f2;
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .warning-note h4 {
+            color: #dc2626;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .warning-note p {
+            color: #b91c1c;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🪟 WebView拖拽分离功能</h1>
+            <p>将WebView标签页拖拽出软件，创建独立窗口 + 智能合并回主窗口</p>
+        </div>
+
+        <div class="demo-section">
+            <div class="section-title">🎯 核心功能演示</div>
+            
+            <div class="feature-showcase">
+                <div class="feature-demo">
+                    <h3 class="drag-out">拖拽分离功能</h3>
+                    <ol class="demo-steps">
+                        <li>在WebView标签页上按下鼠标左键</li>
+                        <li>拖拽标签页到软件窗口外部区域</li>
+                        <li>松开鼠标，自动创建独立的分离窗口</li>
+                        <li>分离窗口包含完整的WebView功能</li>
+                    </ol>
+                    
+                    <div class="visual-demo">
+                        <h4>🖱️ 拖拽演示</h4>
+                        <div class="tab-simulation" ondragstart="simulateDragOut(this)" draggable="true">
+                            📄 示例标签页
+                        </div>
+                        <div style="margin-top: 15px; color: #6b7280; font-size: 14px;">
+                            ↑ 尝试拖拽这个模拟标签页
+                        </div>
+                    </div>
+                </div>
+
+                <div class="feature-demo">
+                    <h3 class="drag-back">智能合并功能</h3>
+                    <ol class="demo-steps">
+                        <li>拖拽分离窗口靠近主窗口</li>
+                        <li>当窗口顶部接触标签栏区域时触发</li>
+                        <li>显示合并提示和高亮效果</li>
+                        <li>松开鼠标完成合并，恢复为标签页</li>
+                    </ol>
+                    
+                    <div class="visual-demo">
+                        <h4>🔄 合并演示</h4>
+                        <div class="detached-window" onclick="simulateMergeBack(this)">
+                            🪟 分离窗口
+                            <div style="font-size: 12px; color: #6b7280; margin-top: 5px;">
+                                点击模拟合并操作
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="implementation-note">
+                <h4>💡 实现原理</h4>
+                <p>
+                    通过Electron的多窗口机制，结合HTML5拖拽API和IPC通信，实现标签页在不同窗口间的无缝迁移。
+                    利用窗口位置监听和碰撞检测算法，智能识别用户的合并意图。
+                </p>
+            </div>
+
+            <div class="tech-specs">
+                <h3>技术栈详情</h3>
+                <div class="tech-list">
+                    <div class="tech-item">• Electron多窗口管理</div>
+                    <div class="tech-item">• IPC进程间通信</div>
+                    <div class="tech-item">• HTML5 Drag & Drop API</div>
+                    <div class="tech-item">• Vue 3响应式系统</div>
+                    <div class="tech-item">• WebView状态保持</div>
+                    <div class="tech-item">• 窗口碰撞检测算法</div>
+                    <div class="tech-item">• 实时位置监听</div>
+                    <div class="tech-item">• TypeScript类型安全</div>
+                </div>
+            </div>
+
+            <div class="warning-note">
+                <h4>⚠️ 注意事项</h4>
+                <p>
+                    此功能需要在Electron环境中运行。在普通浏览器中，会降级为使用window.open创建新窗口，
+                    但无法实现智能合并功能。请确保在应用的Electron版本中测试此功能。
+                </p>
+            </div>
+
+            <div class="section-title">🔧 功能特性</div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div style="background: #f0f9ff; padding: 20px; border-radius: 8px; border-left: 4px solid #0ea5e9;">
+                    <h4 style="color: #0c4a6e; margin-bottom: 10px;">🎯 智能检测</h4>
+                    <p style="color: #075985; line-height: 1.6;">
+                        自动识别拖拽意图，区分重排序和分离操作，提供准确的视觉反馈
+                    </p>
+                </div>
+                
+                <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; border-left: 4px solid #22c55e;">
+                    <h4 style="color: #14532d; margin-bottom: 10px;">⚡ 高性能</h4>
+                    <p style="color: #166534; line-height: 1.6;">
+                        优化的窗口创建和销毁机制，最小化内存占用，确保流畅的用户体验
+                    </p>
+                </div>
+                
+                <div style="background: #fefce8; padding: 20px; border-radius: 8px; border-left: 4px solid #eab308;">
+                    <h4 style="color: #713f12; margin-bottom: 10px;">🔄 状态保持</h4>
+                    <p style="color: #a16207; line-height: 1.6;">
+                        完整保持WebView的浏览状态、历史记录和用户数据，无缝迁移
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>WebView拖拽分离功能 v1.0.0</span>
+            </div>
+            <div>
+                <span>状态: 已实现 ✅</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let detachedWindows = [];
+        
+        function simulateDragOut(element) {
+            console.log('🖱️ 模拟拖拽分离操作');
+            
+            // 视觉效果
+            element.classList.add('dragging');
+            element.style.transform = 'scale(0.9) rotate(5deg)';
+            element.style.opacity = '0.7';
+            
+            setTimeout(() => {
+                // 创建分离窗口效果
+                const container = element.closest('.visual-demo');
+                const detachedWindow = document.createElement('div');
+                detachedWindow.className = 'detached-window';
+                detachedWindow.innerHTML = `
+                    <div style="font-weight: 600; color: #1f2937;">🪟 分离窗口已创建</div>
+                    <div style="font-size: 12px; color: #6b7280; margin-top: 5px;">
+                        WebView内容: ${element.textContent}
+                    </div>
+                    <button onclick="this.parentElement.remove()" style="margin-top: 10px; padding: 4px 8px; border: none; background: #ef4444; color: white; border-radius: 4px; cursor: pointer;">
+                        关闭窗口
+                    </button>
+                `;
+                
+                container.appendChild(detachedWindow);
+                detachedWindows.push(detachedWindow);
+                
+                // 恢复原标签页
+                element.classList.remove('dragging');
+                element.style.transform = '';
+                element.style.opacity = '';
+                element.style.display = 'none';
+                
+                console.log('✅ 分离窗口创建完成');
+            }, 1000);
+        }
+        
+        function simulateMergeBack(element) {
+            console.log('🔄 模拟合并回主窗口操作');
+            
+            // 视觉效果
+            element.style.borderColor = '#10b981';
+            element.style.background = '#ecfdf5';
+            element.innerHTML = `
+                🔄 正在合并...
+                <div style="font-size: 12px; color: #047857; margin-top: 5px;">
+                    恢复为标签页
+                </div>
+            `;
+            
+            setTimeout(() => {
+                // 恢复原标签页
+                const hiddenTab = document.querySelector('.tab-simulation[style*="display: none"]');
+                if (hiddenTab) {
+                    hiddenTab.style.display = 'inline-flex';
+                    hiddenTab.style.animation = 'slideIn 0.3s ease';
+                }
+                
+                // 移除分离窗口
+                element.remove();
+                
+                console.log('✅ 合并操作完成');
+            }, 1500);
+        }
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🎯 WebView拖拽分离功能演示页面已加载');
+            console.log('💡 这是一个功能演示页面，展示了WebView拖拽分离的工作流程');
+            console.log('🔧 实际功能需要在Electron环境中运行');
+            
+            // 添加一些交互提示
+            const tabs = document.querySelectorAll('.tab-simulation');
+            tabs.forEach(tab => {
+                tab.addEventListener('mouseenter', () => {
+                    tab.style.boxShadow = '0 6px 20px rgba(79, 70, 229, 0.3)';
+                });
+                
+                tab.addEventListener('mouseleave', () => {
+                    if (!tab.classList.contains('dragging')) {
+                        tab.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                    }
+                });
+            });
+        });
+        
+        // 防止默认拖拽行为干扰演示
+        document.addEventListener('dragover', (e) => e.preventDefault());
+        document.addEventListener('drop', (e) => e.preventDefault());
+    </script>
+</body>
+</html>

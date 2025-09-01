@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>盯户助手 Logo 生成器</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo-container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .logo {
+            width: 256px;
+            height: 256px;
+            position: relative;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .ding-character {
+            position: relative;
+            width: 180px;
+            height: 180px;
+        }
+
+        /* 眼睛部分 */
+        .eye {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 50%;
+            border: 4px solid #4a5568;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .pupil {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #2d3748 0%, #1a202c 100%);
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pupil::after {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            position: absolute;
+            top: 8px;
+            left: 12px;
+        }
+
+        /* 类似数字7的下半部分 */
+        .seven-part {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 90px;
+        }
+
+        .seven-top {
+            width: 100%;
+            height: 15px;
+            background: linear-gradient(90deg, #ffffff 0%, #e2e8f0 100%);
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .seven-vertical {
+            width: 15px;
+            height: 75px;
+            background: linear-gradient(180deg, #ffffff 0%, #e2e8f0 100%);
+            border-radius: 8px;
+            position: absolute;
+            right: 0;
+            top: 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            transform: rotate(-15deg);
+            transform-origin: top right;
+        }
+
+        /* 装饰性光效 */
+        .glow {
+            position: absolute;
+            top: -20px;
+            left: -20px;
+            right: -20px;
+            bottom: -20px;
+            background: linear-gradient(45deg, 
+                rgba(102, 126, 234, 0.3) 0%, 
+                rgba(118, 75, 162, 0.3) 25%,
+                rgba(102, 126, 234, 0.3) 50%,
+                rgba(118, 75, 162, 0.3) 75%,
+                rgba(102, 126, 234, 0.3) 100%);
+            border-radius: 40px;
+            animation: glow 3s ease-in-out infinite alternate;
+            z-index: -1;
+        }
+
+        @keyframes glow {
+            0% { opacity: 0.5; transform: scale(1); }
+            100% { opacity: 0.8; transform: scale(1.05); }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .title {
+            color: #2d3748;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #718096;
+            font-size: 16px;
+            text-align: center;
+            max-width: 400px;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">盯户助手 Logo 设计</div>
+    <div class="subtitle">基于"盯"字的创意设计：眼睛 + 数字7形状的组合，配以现代渐变色彩</div>
+    
+    <div class="logo-container">
+        <div class="logo" id="logo">
+            <div class="glow"></div>
+            <div class="ding-character">
+                <div class="eye">
+                    <div class="pupil"></div>
+                </div>
+                <div class="seven-part">
+                    <div class="seven-top"></div>
+                    <div class="seven-vertical"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="downloadPNG()">下载 PNG</button>
+        <button onclick="changeGradient()">切换渐变</button>
+        <button onclick="toggleAnimation()">切换动画</button>
+    </div>
+
+    <canvas id="canvas" style="display: none;"></canvas>
+
+    <script>
+        const gradients = [
+            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+            'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+            'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+            'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+            'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+            'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)',
+            'linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%)'
+        ];
+        
+        let currentGradientIndex = 0;
+        let animationEnabled = true;
+
+        function changeGradient() {
+            currentGradientIndex = (currentGradientIndex + 1) % gradients.length;
+            const logo = document.getElementById('logo');
+            logo.style.background = gradients[currentGradientIndex];
+        }
+
+        function toggleAnimation() {
+            const glow = document.querySelector('.glow');
+            animationEnabled = !animationEnabled;
+            glow.style.animationPlayState = animationEnabled ? 'running' : 'paused';
+        }
+
+        function downloadPNG() {
+            const logo = document.getElementById('logo');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = 512;
+            canvas.height = 512;
+            
+            // 创建临时的放大版本用于高质量渲染
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = logo.outerHTML;
+            const tempLogo = tempDiv.firstChild;
+            tempLogo.style.width = '512px';
+            tempLogo.style.height = '512px';
+            tempLogo.style.borderRadius = '40px';
+            
+            // 调整内部元素尺寸
+            const dingChar = tempLogo.querySelector('.ding-character');
+            if (dingChar) {
+                dingChar.style.width = '360px';
+                dingChar.style.height = '360px';
+            }
+            
+            const eye = tempLogo.querySelector('.eye');
+            if (eye) {
+                eye.style.width = '160px';
+                eye.style.height = '160px';
+                eye.style.top = '40px';
+            }
+            
+            const pupil = tempLogo.querySelector('.pupil');
+            if (pupil) {
+                pupil.style.width = '80px';
+                pupil.style.height = '80px';
+            }
+            
+            const sevenPart = tempLogo.querySelector('.seven-part');
+            if (sevenPart) {
+                sevenPart.style.width = '200px';
+                sevenPart.style.height = '180px';
+                sevenPart.style.bottom = '20px';
+            }
+            
+            const sevenTop = tempLogo.querySelector('.seven-top');
+            if (sevenTop) {
+                sevenTop.style.height = '30px';
+                sevenTop.style.borderRadius = '16px';
+            }
+            
+            const sevenVertical = tempLogo.querySelector('.seven-vertical');
+            if (sevenVertical) {
+                sevenVertical.style.width = '30px';
+                sevenVertical.style.height = '150px';
+                sevenVertical.style.borderRadius = '16px';
+            }
+            
+            document.body.appendChild(tempDiv);
+            
+            html2canvas(tempLogo, {
+                canvas: canvas,
+                backgroundColor: null,
+                scale: 1,
+                width: 512,
+                height: 512
+            }).then(function(canvas) {
+                const link = document.createElement('a');
+                link.download = 'ding-assistant-logo.png';
+                link.href = canvas.toDataURL();
+                link.click();
+                
+                document.body.removeChild(tempDiv);
+            });
+        }
+    </script>
+    
+    <!-- html2canvas 库用于生成 PNG -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Electron客户端对话框拦截测试</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-button {
+            display: inline-block;
+            margin: 10px;
+            padding: 15px 20px;
+            background: #FF3B30;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+        .test-button:hover {
+            background: #D70015;
+        }
+        .safe-button {
+            background: #34C759;
+        }
+        .safe-button:hover {
+            background: #248A3D;
+        }
+        .log {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: Monaco, Consolas, monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            color: #856404;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔥 Electron客户端对话框拦截测试</h1>
+    
+    <div class="warning">
+        <strong>⚠️ 重要说明：</strong>
+        此页面专门测试Electron客户端级别的对话框拦截功能。
+        如果拦截成功，您将不会看到系统弹窗，而是在控制台看到拦截日志。
+    </div>
+
+    <div class="test-section">
+        <h2>🚨 模拟协议弹窗测试</h2>
+        <p>以下按钮会触发包含协议关键词的系统对话框，应该被Electron客户端拦截：</p>
+        
+        <button class="test-button" onclick="testProtocolConfirm()">测试协议confirm弹窗</button>
+        <button class="test-button" onclick="testProtocolAlert()">测试协议alert弹窗</button>
+        <button class="test-button" onclick="testProtocolVariations()">测试协议变体弹窗</button>
+        <button class="test-button" onclick="testMultipleProtocols()">测试多种协议弹窗</button>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ 正常弹窗测试</h2>
+        <p>以下按钮会触发正常的对话框，应该正常显示：</p>
+        
+        <button class="test-button safe-button" onclick="testNormalConfirm()">测试正常confirm</button>
+        <button class="test-button safe-button" onclick="testNormalAlert()">测试正常alert</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 测试结果日志</h2>
+        <div id="log" class="log">
+            <div>📝 测试日志将显示在这里...</div>
+            <div>🔍 请同时观察浏览器控制台和Electron控制台的输出</div>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const div = document.createElement('div');
+            const timestamp = new Date().toLocaleTimeString();
+            div.innerHTML = `<span style="color: #666;">${timestamp}</span> - ${message}`;
+            logDiv.appendChild(div);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function testProtocolConfirm() {
+            log('🧪 测试协议confirm: "未设定用来打开URL bytedance://dispatch_message/"');
+            try {
+                const result = confirm('未设定用来打开URL bytedance://dispatch_message/的应用程序。您想要设置默认应用程序吗？');
+                log(`📊 confirm返回结果: ${result}`);
+                if (result === true) {
+                    log('✅ 可能被拦截并返回true');
+                } else {
+                    log('❌ 用户点击了取消或弹窗正常显示');
+                }
+            } catch (error) {
+                log('❌ confirm调用出错: ' + error.message);
+            }
+        }
+
+        function testProtocolAlert() {
+            log('🧪 测试协议alert: "无法打开protocol链接"');
+            try {
+                alert('无法打开protocol链接：bytedance://dispatch_message/');
+                log('📊 alert执行完成');
+            } catch (error) {
+                log('❌ alert调用出错: ' + error.message);
+            }
+        }
+
+        function testProtocolVariations() {
+            log('🧪 测试协议变体弹窗');
+            
+            const protocolMessages = [
+                '没有设置用来打开URL douyin://profile',
+                'Open with external application for toutiao://',
+                'No application found for protocol bytedance-frontend://',
+                '设置默认应用来处理此协议'
+            ];
+
+            protocolMessages.forEach((message, index) => {
+                setTimeout(() => {
+                    log(`🧪 测试变体 ${index + 1}: "${message}"`);
+                    try {
+                        const result = confirm(message);
+                        log(`📊 变体 ${index + 1} 返回: ${result}`);
+                    } catch (error) {
+                        log(`❌ 变体 ${index + 1} 出错: ${error.message}`);
+                    }
+                }, index * 1000);
+            });
+        }
+
+        function testMultipleProtocols() {
+            log('🧪 测试多种协议连续弹窗');
+            
+            const protocols = ['bytedance', 'douyin', 'toutiao', 'aweme'];
+            
+            protocols.forEach((protocol, index) => {
+                setTimeout(() => {
+                    const message = `未设定用来打开URL ${protocol}://test 的应用程序`;
+                    log(`🧪 测试协议 ${protocol}: "${message}"`);
+                    try {
+                        alert(message);
+                        log(`📊 协议 ${protocol} alert完成`);
+                    } catch (error) {
+                        log(`❌ 协议 ${protocol} 出错: ${error.message}`);
+                    }
+                }, index * 800);
+            });
+        }
+
+        function testNormalConfirm() {
+            log('🧪 测试正常confirm: "这是一个正常的确认对话框"');
+            try {
+                const result = confirm('这是一个正常的确认对话框，不包含协议关键词。确定继续吗？');
+                log(`📊 正常confirm返回结果: ${result}`);
+            } catch (error) {
+                log('❌ 正常confirm出错: ' + error.message);
+            }
+        }
+
+        function testNormalAlert() {
+            log('🧪 测试正常alert: "这是一个正常的警告对话框"');
+            try {
+                alert('这是一个正常的警告对话框，应该正常显示。');
+                log('📊 正常alert执行完成');
+            } catch (error) {
+                log('❌ 正常alert出错: ' + error.message);
+            }
+        }
+
+        // 页面加载完成后的提示
+        document.addEventListener('DOMContentLoaded', function() {
+            log('📱 页面加载完成，Electron客户端对话框拦截测试准备就绪');
+            log('🔍 预期行为：');
+            log('  • 协议相关弹窗 → 应该被拦截，不显示系统弹窗');
+            log('  • 正常弹窗 → 应该正常显示');
+            log('  • 控制台 → 显示拦截日志');
+        });
+
+        // 监听页面上的所有点击
+        document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'BUTTON') {
+                log(`🖱️ 点击按钮: ${e.target.textContent}`);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+{
+  "name": "multi-brower",
+  "version": "1.0.0",
+  "main": "dist/electron/main.js",
+  "license": "MIT",
+  "type": "module",
+  "build": {
+    "mac": {
+      "icon": "electron/multi-browser-logo.icns"
+    },
+    "win": {
+      "icon": "electron/multi-browser-logo.png"
+    },
+    "linux": {
+      "icon": "electron/multi-browser-logo.png"
+    },
+    "files": [
+      "dist/electron/**/*",
+      "dist/renderer/**/*",
+      "electron/multi-browser-logo.png",
+      "domains.db",
+      "package.json",
+      "electron/multi-browser-logo.icns"
+    ],
+    "extraFiles": [
+      {
+        "from": "domains.db",
+        "to": "Resources/domains.db"
+      },
+      {
+        "from": "electron/multi-browser-logo.png",
+        "to": "Resources/multi-browser-logo.png"
+      }
+    ],
+    "nodeGypRebuild": false,
+    "buildDependenciesFromSource": false,
+    "npmRebuild": false,
+    "directories": {
+      "buildResources": "build"
+    },
+    "asar": {
+      "smartUnpack": false
+    },
+    "asarUnpack": [
+      "node_modules/sqlite3/**/*"
+    ],
+    "productName": "盯户助手-功能测试版",
+    "appId": "com.dinghu.assistant.test"
+  },
+  "scripts": {
+    "dev:renderer": "vite",
+    "build:renderer": "node scripts/generate-encrypted-scripts.cjs && vite build",
+    "build:electron": "tsc -p electron/tsconfig.main.json && tsc -p electron/tsconfig.preload.json && xcopy /Y electron\\multi-browser-logo.* dist\\electron\\",
+    "build:icons": "node scripts/build-icons.cjs",
+    "select:icon": "node scripts/select-icon.cjs",
+    "setup:db": "node scripts/setup-database.cjs",
+    "encrypt:preset": "node scripts/encrypt-preset-scripts.cjs",
+    "clear:db": "node scripts/clear-database.cjs",
+    "clear:db:selective": "node scripts/clear-selected-tables.cjs",
+    "clear:bookmarks": "node scripts/clear-selected-tables.cjs bookmark",
+    "clear:accounts": "node scripts/clear-selected-tables.cjs account",
+    "clear:scripts": "node scripts/clear-selected-tables.cjs script",
+    "clear:domains": "node scripts/clear-selected-tables.cjs domain",
+    "prebuild": "yarn setup:db && yarn build:icons",
+    "predev": "yarn setup:db && node scripts/generate-encrypted-scripts.cjs",
+    "dev": "cross-env NODE_ENV=development concurrently \"yarn build:electron && yarn dev:renderer\" \"node scripts/wait-and-start-electron.cjs\"",
+    "dev:smart": "node scripts/start-dev.cjs",
+    "build": "cross-env NODE_ENV=production yarn build:renderer && yarn build:electron && electron-builder",
+    "build:trial": "node scripts/prepare-build.cjs trial && cross-env NODE_ENV=production yarn build:renderer && yarn build:electron && electron-builder && node scripts/cleanup-build.cjs",
+    "build:quarterly": "node scripts/prepare-build.cjs quarterly && cross-env NODE_ENV=production yarn build:renderer && yarn build:electron && electron-builder && node scripts/cleanup-build.cjs",
+    "build:test": "node scripts/prepare-build.cjs test && cross-env NODE_ENV=production yarn build:renderer && yarn build:electron && electron-builder && node scripts/cleanup-build.cjs",
+    "build:all": "yarn build:trial && yarn build:quarterly && yarn build:test"
+  },
+  "dependencies": {
+    "@types/crypto-js": "^4.2.2",
+    "ant-design-vue": "^4.2.6",
+    "crypto-js": "^4.2.0",
+    "electron-log": "^5.4.2",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
+    "vue": "3"
+  },
+  "devDependencies": {
+    "@types/sqlite3": "^5.1.0",
+    "@vitejs/plugin-vue": "^4.6.2",
+    "concurrently": "^8.2.2",
+    "cross-env": "7.0.3",
+    "electron": "^37.2.5",
+    "electron-builder": "^24.13.3",
+    "electron-rebuild": "^3.2.9",
+    "sass": "^1.77.8",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4",
+    "unocss": "^0.61.9",
+    "vite": "^4.5.5",
+    "wait-on": "^8.0.4"
+  },
+  "volta": {
+    "node": "18.14.0"
+  }
+}

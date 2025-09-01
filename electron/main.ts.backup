@@ -1,0 +1,1286 @@
+import {
+  app,
+  BrowserWindow,
+  ipcMain,
+  WebContents,
+  webContents,
+  session,
+  globalShortcut,
+  shell,
+  dialog,
+} from "electron";
+import { fileURLToPath } from "url";
+import path, { dirname, join } from "path";
+import { createRequire } from "module";
+import fs from "fs";
+import { sqlite3, open } from "./database.js";
+import CryptoJS from "crypto-js";
+
+// 🔥 简化版本：纯客户端对话框拦截
+console.log('🚀 启动纯客户端对话框拦截机制...');
+
+// 保存原始的dialog方法
+const originalShowMessageBox = dialog.showMessageBox;
+const originalShowMessageBoxSync = dialog.showMessageBoxSync;
+const originalShowErrorBox = dialog.showErrorBox;
+
+// 重写dialog.showMessageBox (异步版本) - 拦截所有弹窗
+(dialog as any).showMessageBox = async function(...args: any[]) {
+  const [window, options] = args.length === 1 ? [null, args[0]] : args;
+  const message = options?.message || options?.detail || '';
+  const title = options?.title || '';
+  
+  console.log('🔍 拦截showMessageBox调用:', { title, message });
+  console.log('🚨 阻止客户端弹窗:', message || title);
+  
+  // 直接返回默认结果，不显示弹窗
+  return { response: 0, checkboxChecked: false }; // 返回"确定"
+};
+
+// 重写dialog.showMessageBoxSync (同步版本) - 拦截所有弹窗
+(dialog as any).showMessageBoxSync = function(...args: any[]) {
+  const [window, options] = args.length === 1 ? [null, args[0]] : args;
+  const message = options?.message || options?.detail || '';
+  const title = options?.title || '';
+  
+  console.log('🔍 拦截showMessageBoxSync调用:', { title, message });
+  console.log('🚨 阻止客户端弹窗:', message || title);
+  
+  // 直接返回默认结果，不显示弹窗
+  return 0; // 返回"确定"
+};
+
+// 重写dialog.showErrorBox - 拦截所有错误弹窗
+dialog.showErrorBox = function(title: string, content: string) {
+  console.log('🔍 拦截showErrorBox调用:', { title, content });
+  console.log('🚨 阻止客户端错误弹窗:', content);
+  
+  // 直接返回，不显示错误框
+  return;
+};
+
+// 🔥 额外增强：拦截shell.openExternal (可选，防止外部链接打开)
+const originalOpenExternal = shell.openExternal;
+shell.openExternal = async (url: string, options?: any) => {
+  console.log('🔍 拦截shell.openExternal调用:', url);
+  console.log('🚨 阻止外部链接打开:', url);
+  
+  // 直接返回，不执行打开操作
+  return;
+};
+
+console.log('✅ 纯客户端对话框拦截机制已激活');
+
+// 🚫 在最早期禁用所有可能导致协议注册的特性
+app.commandLine.appendSwitch('disable-web-security');
+app.commandLine.appendSwitch('disable-features', 'VizDisplayCompositor');
+app.commandLine.appendSwitch('allow-running-insecure-content');
+app.commandLine.appendSwitch('disable-site-isolation-trials');
+app.commandLine.appendSwitch('ignore-certificate-errors');
+app.commandLine.appendSwitch('ignore-ssl-errors');
+app.commandLine.appendSwitch('ignore-certificate-errors-spki-list');
+app.commandLine.appendSwitch('disable-default-apps');  // 禁用默认应用注册
+app.commandLine.appendSwitch('disable-protocol-handler-registration'); // 禁用协议处理器注册
+app.commandLine.appendSwitch('disable-client-side-phishing-detection');
+app.commandLine.appendSwitch('disable-component-update');
+console.log('🚫 已在应用启动早期禁用所有协议注册特性');
+
+// 为 ES Module 环境创建 require 函数
+const require = createRequire(import.meta.url);
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+let mainWindow: BrowserWindow | null = null;
+
+// RSA 加密配置
+const RSA_CONFIG = {
+  key: CryptoJS.enc.Utf8.parse('MultiB-Browser-Key32'), // 32字符密钥
+  iv: CryptoJS.enc.Utf8.parse('MultiB-Browser-IV16'),   // 16字符IV
+};
+
+// RSA 加密函数
+function encryptScript(text: string): string {
+  try {
+    const encrypted = CryptoJS.AES.encrypt(text, RSA_CONFIG.key, {
+      iv: RSA_CONFIG.iv,
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7
+    });
+    return encrypted.toString();
+  } catch (error) {
+    console.error('加密失败:', error);
+    throw error;
+  }
+}
+
+// RSA 解密函数
+function decryptScript(encryptedText: string): string {
+  try {
+    // 首先尝试使用base64解码（用于新的预设脚本）
+    try {
+      const decoded = Buffer.from(encryptedText, 'base64').toString('utf8');
+      // 验证解码结果是否是有效的JavaScript代码
+      if (decoded.includes('function') || decoded.includes('console.log') || decoded.includes('document.')) {
+        console.log('✅ 使用base64解密成功');
+        return decoded;
+      }
+    } catch (base64Error) {
+      console.log('Base64解码失败，尝试AES解密...');
+    }
+    
+    // 如果base64解码失败，回退到AES解密（用于旧的加密脚本）
+    const decrypted = CryptoJS.AES.decrypt(encryptedText, RSA_CONFIG.key, {
+      iv: RSA_CONFIG.iv,
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7
+    });
+    const result = decrypted.toString(CryptoJS.enc.Utf8);
+    console.log('✅ 使用AES解密成功');
+    return result;
+  } catch (error) {
+    console.error('解密失败:', error);
+    throw error;
+  }
+}
+
+// 全局错误处理
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // 不要退出程序，继续运行
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // 不要退出程序，继续运行
+});
+
+// 获取应用图标路径
+function getIconPath(): string {
+  if (process.env.NODE_ENV === "development") {
+    // 开发环境：使用源码目录中的图标
+    // __dirname 指向 dist/electron，需要回到项目根目录
+    const projectRoot = path.join(__dirname, "../..");
+    const iconPath = path.join(projectRoot, "electron/multi-browser-logo.png");
+    console.log(`开发环境图标路径: ${iconPath}`);
+
+    // 检查文件是否存在
+    try {
+      fs.accessSync(iconPath);
+      return iconPath;
+    } catch {
+      console.warn(`图标文件不存在: ${iconPath}，使用默认图标`);
+      return path.join(__dirname, "multi-browser-logo.png");
+    }
+  } else {
+    // 生产环境：使用打包后的图标
+    if (process.platform === "darwin") {
+      // macOS: 尝试使用 .icns 文件，如果不存在则使用 PNG
+      const icnsPath = path.join(process.resourcesPath, "multi-browser-logo.icns");
+      const pngPath = path.join(__dirname, "multi-browser-logo.png");
+
+      // 检查 icns 文件是否存在
+      try {
+        fs.accessSync(icnsPath);
+        return icnsPath;
+      } catch {
+        return pngPath;
+      }
+    } else {
+      // Windows/Linux: 使用 PNG
+      return path.join(__dirname, "multi-browser-logo.png");
+    }
+  }
+}
+
+// 删除指定partition的存储文件夹并清除session数据
+async function deletePartitionStorageFolder(partitionName: string) {
+  try {
+    console.log(`🧹 开始删除partition "${partitionName}" 的存储数据...`);
+
+    // 第一步：清除session中的所有数据（包括cookies）
+    try {
+      const partitionSession = session.fromPartition(partitionName);
+      if (partitionSession) {
+        // 清除缓存
+        await partitionSession.clearCache();
+        console.log(`✅ 已清除partition "${partitionName}" 的缓存`);
+
+        // 清除所有存储数据，特别是cookies
+        await partitionSession.clearStorageData({
+          storages: [
+            'cookies',           // 🍪 最重要：清除cookies
+            'filesystem',
+            'indexdb',
+            'localstorage',
+            'shadercache',
+            'websql',
+            'serviceworkers',
+            'cachestorage',
+          ],
+        });
+        console.log(`✅ 已清除partition "${partitionName}" 的所有存储数据（包括cookies）`);
+      }
+    } catch (sessionError) {
+      console.warn(`⚠️ 清除partition session数据时出错:`, sessionError);
+    }
+
+    // 第二步：删除文件系统中的存储文件夹
+    const userDataPath = app.getPath('userData');
+    const partitionPath = path.join(userDataPath, 'Partitions', partitionName.replace('persist:', ''));
+
+    if (fs.existsSync(partitionPath)) {
+      await fs.promises.rmdir(partitionPath, { recursive: true });
+      console.log(`🗑️ 已删除partition存储文件夹: ${partitionPath}`);
+    } else {
+      console.log(`ℹ️ partition存储文件夹不存在: ${partitionPath}`);
+    }
+
+    console.log(`✅ partition "${partitionName}" 删除完成（包括cookies和所有存储数据）`);
+    return true;
+
+  } catch (error) {
+    console.error(`❌ 删除partition存储数据失败 "${partitionName}":`, error);
+    return false;
+  }
+}
+
+// 清除所有浏览器实例的缓存数据并删除存储文件夹
+async function clearAllBrowserInstanceCaches() {
+  console.log('🧹 开始清除所有浏览器实例的缓存数据和存储文件夹...');
+
+  try {
+    // 获取默认session
+    const defaultSession = session.defaultSession;
+    await defaultSession.clearCache();
+    console.log('✅ 默认session缓存已清除');
+
+    // 清除默认session的存储数据
+    await defaultSession.clearStorageData({
+      storages: [
+        'cookies',
+        'filesystem',
+        'indexdb',
+        'localstorage',
+        'shadercache',
+        'websql',
+        'serviceworkers',
+        'cachestorage',
+      ],
+    });
+    console.log('✅ 默认session存储数据已清除');
+
+    // 删除所有partition存储文件夹
+    try {
+      const userDataPath = app.getPath('userData');
+      const partitionsPath = path.join(userDataPath, 'Partitions');
+
+      if (fs.existsSync(partitionsPath)) {
+        const partitionDirs = await fs.promises.readdir(partitionsPath);
+        let deletedFolders = 0;
+
+        for (const partitionDir of partitionDirs) {
+          const partitionFolderPath = path.join(partitionsPath, partitionDir);
+          const stat = await fs.promises.stat(partitionFolderPath);
+
+          if (stat.isDirectory()) {
+            try {
+              await fs.promises.rmdir(partitionFolderPath, { recursive: true });
+              deletedFolders++;
+              console.log(`🗑️ 已删除partition存储文件夹: ${partitionFolderPath}`);
+            } catch (deleteError) {
+              console.warn(`⚠️ 删除partition文件夹失败 "${partitionFolderPath}":`, deleteError);
+            }
+          }
+        }
+
+        console.log(`🗑️ 总共删除了 ${deletedFolders} 个partition存储文件夹`);
+      } else {
+        console.log('ℹ️ Partitions文件夹不存在，无需删除');
+      }
+    } catch (folderError) {
+      console.warn('⚠️ 删除partition存储文件夹时出错:', folderError);
+    }
+
+    // 尝试从数据库中获取所有域名的partition信息
+    let partitionsFromDB = new Set<string>();
+    try {
+      const db = await getDb(); // 使用默认数据库路径
+      const domains = await db.all('SELECT DISTINCT page_id FROM domain');
+
+      domains.forEach((domain: any) => {
+        if (domain.page_id) {
+          partitionsFromDB.add(`persist:${domain.page_id}`);
+        }
+      });
+
+      console.log(`📊 从数据库中发现 ${partitionsFromDB.size} 个partition`);
+    } catch (dbError) {
+      console.warn('⚠️ 无法从数据库获取partition信息，使用通用清除方法:', dbError);
+    }
+
+    // 添加一些常见的partition模式作为备用
+    const partitionsToTry = new Set<string>();
+
+    // 添加数据库中的partitions
+    partitionsFromDB.forEach(partition => partitionsToTry.add(partition));
+
+    // 添加基础partitions
+    partitionsToTry.add('persist:browser_default');
+
+    // 添加一些通用模式作为备用（以防数据库无法访问）
+    for (let i = 1; i <= 50; i++) {
+      partitionsToTry.add(`persist:domain_${i}`);
+      partitionsToTry.add(`persist:page_${i}`);
+    }
+
+    // 也清除一些可能的UUID格式的partition
+    // 注意：这个循环只是为了清除可能遗留的partition，实际使用中应该以数据库为准
+
+    let clearedCount = 0;
+    let attemptedCount = 0;
+
+    for (const partitionName of partitionsToTry) {
+      try {
+        attemptedCount++;
+        const partitionSession = session.fromPartition(partitionName);
+
+        // 检查session是否实际存在（通过尝试获取其属性）
+        if (partitionSession) {
+          await partitionSession.clearCache();
+          await partitionSession.clearStorageData({
+            storages: [
+              'cookies',
+              'filesystem',
+              'indexdb',
+              'localstorage',
+              'shadercache',
+              'websql',
+              'serviceworkers',
+              'cachestorage',
+            ],
+          });
+          clearedCount++;
+          console.log(`✅ 已清除partition "${partitionName}" 的缓存和存储数据`);
+        }
+      } catch (error) {
+        // 某些partition可能不存在，这是正常的
+        // 只有在调试模式下才显示这些信息
+        if (process.env.NODE_ENV === 'development' && attemptedCount <= 10) {
+          console.log(`ℹ️ partition "${partitionName}" 不存在或已清除`);
+        }
+      }
+    }
+
+    console.log(`✅ 所有浏览器实例缓存数据清除完成，尝试了 ${attemptedCount} 个partition，实际清除了 ${clearedCount} 个`);
+
+  } catch (error) {
+    console.error('❌ 清除浏览器实例缓存时发生错误:', error);
+  }
+}
+
+async function createWindow() {
+  const iconPath = getIconPath();
+  console.log(`使用图标路径: ${iconPath}`);
+
+  try {
+    mainWindow = new BrowserWindow({
+      width: 1600,
+      height: 800,
+      minWidth: 1600,
+      minHeight: 800,
+      title: "盯户助手",
+      icon: iconPath,
+      autoHideMenuBar: true, // 隐藏菜单栏
+      webPreferences: {
+        preload: join(__dirname, "preload.js"),
+        contextIsolation: true,
+        nodeIntegration: false,
+        devTools: true,
+        webviewTag: true,
+        webSecurity: false,
+        allowRunningInsecureContent: true,
+        // 禁用实验性功能，防止自动协议注册
+        experimentalFeatures: false,
+        // Windows 输入修复：禁用拼写检查，可能导致输入问题
+        spellcheck: false,
+        // 确保输入事件正常传递
+        enableBlinkFeatures: 'TouchEventFeatureDetection',
+        // 禁用自动协议处理
+        navigateOnDragDrop: false,
+        // 禁用插件
+        plugins: false,
+        // 禁用 webgl
+        webgl: false,
+      },
+    });
+
+    // Windows 特定修复：确保窗口可以接收输入事件
+    if (process.platform === 'win32') {
+      mainWindow.setSkipTaskbar(false);
+      // 确保窗口在创建后立即获得焦点
+      mainWindow.once('ready-to-show', () => {
+        mainWindow?.show();
+        mainWindow?.focus();
+      });
+    }
+
+    console.log(`当前环境：${process.env.NODE_ENV}`);
+
+    if (process.env.NODE_ENV === "development") {
+      // 尝试多个可能的端口
+      const ports = [5173, 5174, 5175, 5176];
+      let loaded = false;
+
+      for (const port of ports) {
+        try {
+          await mainWindow.loadURL(`http://localhost:${port}`);
+          console.log(`✅ 成功连接到端口 ${port}`);
+          loaded = true;
+          break;
+        } catch (error) {
+          console.log(`❌ 端口 ${port} 连接失败，尝试下一个...`);
+        }
+      }
+
+      if (!loaded) {
+        throw new Error("无法连接到开发服务器");
+      }
+
+      mainWindow.webContents.openDevTools();
+    } else {
+      await mainWindow.loadFile(
+        join(__dirname, "../../dist/renderer/index.html")
+      );
+    }
+
+    // 🔥 全局主进程级别的对话框拦截
+    // 这是最关键的拦截点，拦截所有webContents发起的系统对话框
+    app.on('web-contents-created', (event, contents) => {
+      console.log('🔍 新的web-contents创建:', contents.id);
+      
+      // 移除协议拦截，保持正常功能
+    });
+
+    // 🔥 主窗口级别的对话框拦截
+    mainWindow.webContents.on('dom-ready', () => {
+      console.log('🔥 主窗口DOM就绪，注入全局对话框拦截...');
+      
+      // 在主窗口注入最高优先级的拦截代码
+      mainWindow?.webContents.executeJavaScript(`
+        (function() {
+          console.log('🛡️ 主窗口级别对话框拦截激活...');
+          
+          // 最高优先级拦截
+          const originalConfirm = window.confirm;
+          const originalAlert = window.alert;
+          
+          window.confirm = function(message) {
+            console.log('🔍 主窗口拦截confirm调用:', message);
+            if (typeof message === 'string') {
+              const protocolMessages = [
+                '未设定用来打开URL',
+                '没有设置用来打开URL',
+                '无法打开',
+                'protocol',
+                'bytedance',
+                'douyin',
+                'toutiao',
+                'dispatch_message',
+                '设置默认应用',
+                'Open with',
+                'No application',
+                'unhandled protocol'
+              ];
+              
+              if (protocolMessages.some(keyword => message.toLowerCase().includes(keyword.toLowerCase()))) {
+                console.warn('🚨 主窗口级别阻止协议确认框:', message);
+                return true; // 假装用户点击了确定
+              }
+            }
+            return originalConfirm.call(this, message);
+          };
+          
+          window.alert = function(message) {
+            console.log('🔍 主窗口拦截alert调用:', message);
+            if (typeof message === 'string') {
+              const protocolMessages = [
+                '未设定用来打开URL',
+                '没有设置用来打开URL',
+                '无法打开',
+                'protocol',
+                'bytedance',
+                'douyin',
+                'toutiao',
+                'dispatch_message',
+                '设置默认应用',
+                'Open with',
+                'No application',
+                'unhandled protocol'
+              ];
+              
+              if (protocolMessages.some(keyword => message.toLowerCase().includes(keyword.toLowerCase()))) {
+                console.warn('🚨 主窗口级别阻止协议警告框:', message);
+                return; // 直接返回，不显示警告框
+              }
+            }
+            return originalAlert.call(this, message);
+          };
+          
+          console.log('✅ 主窗口级别对话框拦截已激活');
+        })();
+      `).catch(err => {
+        console.error('注入主窗口对话框拦截失败:', err);
+      });
+    });
+
+    // Windows 输入修复：添加事件监听器
+    if (process.platform === 'win32') {
+      mainWindow.webContents.on('dom-ready', () => {
+        // 注入修复输入问题的代码
+        mainWindow?.webContents.executeJavaScript(`
+          // 修复 Windows 下输入框无法输入的问题
+          document.addEventListener('DOMContentLoaded', function() {
+            // 强制启用所有输入元素
+            const inputs = document.querySelectorAll('input, textarea');
+            inputs.forEach(input => {
+              input.removeAttribute('readonly');
+              input.removeAttribute('disabled');
+            });
+            
+            // 修复焦点问题
+            document.addEventListener('click', function(e) {
+              if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                e.target.focus();
+              }
+            });
+            
+            console.log('Windows 输入修复已应用');
+          });
+          
+          // 立即应用修复
+          const inputs = document.querySelectorAll('input, textarea');
+          inputs.forEach(input => {
+            input.removeAttribute('readonly');
+            input.removeAttribute('disabled');
+          });
+        `);
+      });
+    }
+
+    mainWindow.webContents.on(
+      "did-attach-webview",
+      (_event, contents: WebContents) => {
+        // 设置webview的窗口打开处理器 - 增强安全版本
+        contents.setWindowOpenHandler(({ url, frameName, features, disposition }) => {
+          console.log('外链请求:', url);
+          console.log('窗口特性:', { frameName, features, disposition });
+
+          // 检查危险协议
+          const appProtocols = ['bytedance:', 'toutiao:', 'douyin:', 'xigua:', 'aweme:', 'snssdk:', 'javascript:', 'data:', 'vbscript:'];
+          if (appProtocols.some(protocol => url.toLowerCase().startsWith(protocol))) {
+            console.warn('🚨 阻止应用协议:', url);
+            return { action: 'deny' };
+          }
+
+          // 检查可能触发应用启动的特殊URL模式
+          const dangerousPatterns = [
+            /zijieapi\.com.*api\/link/i,  // 字节跳动API链接
+            /security\.zijieapi\.com/i,   // 安全API
+            /isBlank=true/i,              // 可能打开新窗口的参数
+            /targetUrl.*bytedance/i,      // 目标URL包含字节跳动
+            /targetUrl.*douyin/i,         // 目标URL包含抖音
+            /openapp\./i,                 // app打开相关
+            /intent:/i,                   // Android intent协议
+            /market:/i,                   // 应用商店协议
+          ];
+
+          const hasDangerousPattern = dangerousPatterns.some(pattern => pattern.test(url));
+          if (hasDangerousPattern) {
+            console.warn('🚨 完全阻止危险新窗口/API调用:', url);
+            return { action: 'deny' };
+          }
+
+          // 通知渲染进程创建新标签页
+          mainWindow?.webContents.send("webview-open-url", {
+            url,
+            webContentsId: contents.id
+          });
+
+          return { action: 'deny' };
+        });
+
+        // 添加错误处理
+        contents.on('crashed' as any, (event: any) => {
+          console.warn('webview crashed:', event);
+        });
+
+        contents.on('unresponsive' as any, () => {
+          console.warn('webview became unresponsive');
+        });
+
+        contents.on('responsive' as any, () => {
+          console.log('webview became responsive again');
+        });
+
+        // // 允许webview加载更多类型的内容
+        // contents.session.webRequest.onBeforeSendHeaders((details, callback) => {
+        //   // 设置真实的Chrome User-Agent
+        //   details.requestHeaders['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+        //   // 对于巨量引擎，添加特殊配置
+        //   if (details.url.includes('oceanengine.com') || details.url.includes('business.oceanengine.com')) {
+        //     details.requestHeaders['Referer'] = 'https://business.oceanengine.com/';
+        //     details.requestHeaders['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7';
+        //     details.requestHeaders['Accept-Language'] = 'zh-CN,zh;q=0.9,en;q=0.8';
+        //     details.requestHeaders['Cache-Control'] = 'no-cache';
+        //     details.requestHeaders['Pragma'] = 'no-cache';
+        //     details.requestHeaders['Sec-Fetch-Dest'] = 'document';
+        //     details.requestHeaders['Sec-Fetch-Mode'] = 'navigate';
+        //     details.requestHeaders['Sec-Fetch-Site'] = 'same-origin';
+        //     details.requestHeaders['Sec-Ch-Ua'] = '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"';
+        //     details.requestHeaders['Sec-Ch-Ua-Mobile'] = '?0';
+        //     details.requestHeaders['Sec-Ch-Ua-Platform'] = '"Windows"';
+        //     details.requestHeaders['Upgrade-Insecure-Requests'] = '1';
+        //   } else if (details.url.includes('baidu.com') || details.url.includes('www.baidu.com')) {
+        //     // 对于百度搜索，添加更多必要的头部
+        //     details.requestHeaders['Referer'] = 'https://www.baidu.com/';
+        //     details.requestHeaders['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7';
+        //     details.requestHeaders['Accept-Language'] = 'zh-CN,zh;q=0.9,en;q=0.8';
+        //     details.requestHeaders['Cache-Control'] = 'no-cache';
+        //     details.requestHeaders['Pragma'] = 'no-cache';
+        //   } else {
+        //     // 对于其他网站，添加通用referer
+        //     details.requestHeaders['Referer'] = 'https://www.google.com/';
+        //   }
+
+        //   console.log('请求头设置:', details.url, details.requestHeaders['User-Agent']);
+        //   callback({ requestHeaders: details.requestHeaders });
+        // });
+
+        // 允许所有权限请求（摄像头、麦克风、通知等）
+        contents.session.setPermissionRequestHandler((webContents, permission, callback) => {
+          // 对于大部分权限，我们都允许
+          callback(true);
+        });
+
+        // 🚫 设置协议处理器拦截 - 阻止外部应用打开请求
+        contents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+          // 如果是外部应用打开相关的权限，直接拒绝
+          if (permission === 'openExternal') {
+            console.warn('🚨 阻止外部应用打开权限请求:', permission, requestingOrigin, details);
+            return false;
+          }
+          return true;
+        });
+
+        // 设置更宽松的内容安全策略 (保留正常功能)
+        contents.session.webRequest.onHeadersReceived((details, callback) => {
+          const responseHeaders = details.responseHeaders || {};
+
+          // 移除严格的安全头
+          delete responseHeaders['content-security-policy'];
+          delete responseHeaders['content-security-policy-report-only'];
+          delete responseHeaders['x-frame-options'];
+          delete responseHeaders['x-content-type-options'];
+          delete responseHeaders['strict-transport-security'];
+          delete responseHeaders['x-xss-protection'];
+
+          // 添加允许跨域的头
+          responseHeaders['access-control-allow-origin'] = ['*'];
+          responseHeaders['access-control-allow-methods'] = ['GET, POST, PUT, DELETE, OPTIONS'];
+          responseHeaders['access-control-allow-headers'] = ['*'];
+
+          callback({ responseHeaders });
+        });
+
+        // 证书错误处理
+        contents.on('certificate-error', (event, url, error, certificate, callback) => {
+          event.preventDefault();
+          callback(true);
+        });
+
+        // 🔥 关键：拦截网页发起的协议相关对话框
+        // 移除new-window拦截，保持正常功能
+        contents.on('new-window' as any, (event: any, url: string) => {
+          console.log('🔍 new-window事件:', url);
+          // 允许所有new-window请求正常处理
+        });
+        
+        // 简化的DOM处理
+        contents.on('dom-ready', () => {
+          // 只注入纯对话框拦截，不检测协议
+          contents.executeJavaScript(`
+            (function() {
+              console.log('🔥 启动纯客户端对话框拦截...');
+              
+              // 保存原始方法
+              const originalConfirm = window.confirm;
+              const originalAlert = window.alert;
+              
+              // 拦截所有confirm调用
+              window.confirm = function(message) {
+                console.log('🚨 拦截confirm调用:', message);
+                return true; // 直接返回true，不显示弹窗
+              };
+              
+              // 拦截所有alert调用
+              window.alert = function(message) {
+                console.log('🚨 拦截alert调用:', message);
+                return; // 直接返回，不显示弹窗
+              };
+              
+              console.log('✅ 纯客户端对话框拦截已激活');
+            })();
+          `).catch(err => {
+            console.error('注入对话框拦截失败:', err);
+          });
+        });
+                    '没有设置用来打开URL',
+                    '无法打开',
+                    'protocol',
+                    'bytedance',
+                    'douyin',
+                    'toutiao',
+                    'dispatch_message'
+                  ];
+                  
+                  if (protocolMessages.some(keyword => message.toLowerCase().includes(keyword.toLowerCase()))) {
+                    console.warn('🚨 阻止协议相关确认框:', message);
+                    return true; // 假装用户点击了确定
+                  }
+                }
+                return originalConfirm.call(this, message);
+              };
+              
+              window.alert = function(message) {
+                if (typeof message === 'string') {
+                  // 检查是否是协议相关的警告框
+                  const protocolMessages = [
+                    '未设定用来打开URL',
+                    '没有设置用来打开URL',
+                    '无法打开',
+                    'protocol',
+                    'bytedance',
+                    'douyin',
+                    'toutiao',
+                    'dispatch_message'
+                  ];
+                  
+                  if (protocolMessages.some(keyword => message.toLowerCase().includes(keyword.toLowerCase()))) {
+                    console.warn('🚨 阻止协议相关警告框:', message);
+                    return; // 直接返回，不显示警告框
+                  }
+                }
+                return originalAlert.call(this, message);
+              };
+
+              // 🎭 伪装协议支持 - 让网站认为协议已经支持
+              if (typeof navigator !== 'undefined') {
+                // 重写 registerProtocolHandler，假装成功注册
+                navigator.registerProtocolHandler = function(protocol, url, title) {
+                  console.log('🎭 伪装协议注册成功:', protocol, url, title);
+                  return undefined; // 假装成功
+                };
+
+                // 添加 isProtocolHandlerRegistered，总是返回已注册
+                if (!navigator.isProtocolHandlerRegistered) {
+                  navigator.isProtocolHandlerRegistered = function(scheme, url) {
+                    const isProblematic = problematicProtocols.some(p => scheme.includes(p.replace(':', '')));
+                    if (isProblematic) {
+                      console.log('🎭 伪装协议已注册:', scheme, url);
+                      return 'registered'; // 假装已注册
+                    }
+                    return 'declined';
+                  };
+                }
+
+                // 添加 msLaunchUri 方法（IE/Edge协议启动）
+                if (!navigator.msLaunchUri) {
+                  navigator.msLaunchUri = function(uri, successCallback, noHandlerCallback) {
+                    console.log('🎭 伪装msLaunchUri成功:', uri);
+                    const isDangerous = problematicProtocols.some(p => uri.startsWith(p));
+                    if (isDangerous && successCallback) {
+                      setTimeout(successCallback, 10); // 假装成功
+                    } else if (noHandlerCallback) {
+                      setTimeout(noHandlerCallback, 10);
+                    }
+                  };
+                }
+              }
+
+              console.log('✅ 超强协议检测阻止脚本加载完成');
+            })();
+          `).catch(err => {
+            console.error('注入超强协议拦截脚本失败:', err);
+          });
+
+          // 然后注入原有的拦截脚本
+          contents.executeJavaScript(`
+            // 阻止网页注册协议处理器
+            if (typeof navigator !== 'undefined' && navigator.registerProtocolHandler) {
+              const originalRegisterProtocolHandler = navigator.registerProtocolHandler;
+              navigator.registerProtocolHandler = function(protocol, url, title) {
+                console.warn('🚨 阻止网页注册协议处理器:', protocol, url, title);
+                // 不执行任何操作，直接返回
+                return;
+              };
+              console.log('✅ 已禁用 navigator.registerProtocolHandler');
+            }
+            
+            // 增强的协议链接拦截器
+            if (typeof window !== 'undefined') {
+              // 定义问题协议列表
+              const problematicProtocols = [
+                'bytedance:', 'douyin:', 'toutiao:', 'xigua:', 'aweme:', 'snssdk:',
+                'bytedance-frontend:', 'bytedance-service:', 'bytedance-ads:',
+                'douyin-fe:', 'douyin-service:', 'douyin-creator:',
+                'intent:', 'market:', 'itms:', 'itms-apps:'
+              ];
+              
+              // 定义危险URL模式
+              const dangerousPatterns = [
+                /dispatch_message/i,
+                /openapp\\./i,
+                /app\\.link/i,
+                /deeplink/i,
+                /universal\\.link/i,
+                /zijieapi\\.com.*link/i,
+                /security\\.zijieapi\\.com/i,
+                /targetUrl.*protocol/i,
+                /scheme.*bytedance/i,
+                /scheme.*douyin/i
+              ];
+              
+              // 检查URL是否危险
+              function isDangerousUrl(url) {
+                if (!url) return false;
+                const lowerUrl = url.toLowerCase();
+                
+                // 检查协议
+                if (problematicProtocols.some(protocol => lowerUrl.startsWith(protocol))) {
+                  return true;
+                }
+                
+                // 检查模式
+                if (dangerousPatterns.some(pattern => pattern.test(url))) {
+                  return true;
+                }
+                
+                return false;
+              }
+              
+              // 重写window.open方法
+              const originalWindowOpen = window.open;
+              window.open = function(url, target, features) {
+                if (isDangerousUrl(url)) {
+                  console.warn('🚨 阻止window.open打开危险URL:', url);
+                  return null;
+                }
+                return originalWindowOpen.call(this, url, target, features);
+              };
+              
+              // 重写location.href设置
+              const originalLocationHref = Object.getOwnPropertyDescriptor(Location.prototype, 'href');
+              if (originalLocationHref && originalLocationHref.set) {
+                Object.defineProperty(Location.prototype, 'href', {
+                  set: function(url) {
+                    if (isDangerousUrl(url)) {
+                      console.warn('� 阻止location.href跳转到危险URL:', url);
+                      return;
+                    }
+                    originalLocationHref.set.call(this, url);
+                  },
+                  get: originalLocationHref.get,
+                  enumerable: true,
+                  configurable: true
+                });
+              }
+              
+              // 拦截所有协议链接的点击事件（使用捕获阶段确保优先处理）
+              document.addEventListener('click', function(e) {
+                // 检查点击目标及其父元素的链接
+                let target = e.target;
+                let href = null;
+                
+                // 向上查找最多5层，寻找有href属性的元素
+                for (let i = 0; i < 5 && target; i++) {
+                  if (target.href) {
+                    href = target.href;
+                    break;
+                  }
+                  if (target.getAttribute && target.getAttribute('href')) {
+                    href = target.getAttribute('href');
+                    break;
+                  }
+                  target = target.parentElement;
+                }
+                
+                if (href && isDangerousUrl(href)) {
+                  console.warn('🚨 阻止点击危险协议链接:', href);
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.stopImmediatePropagation();
+                  return false;
+                }
+              }, true); // 使用捕获阶段
+              
+              // 阻止页面卸载时的协议处理
+              window.addEventListener('beforeunload', function(e) {
+                console.log('🚫 页面卸载时阻止协议处理');
+              });
+              
+              // 监听hashchange事件，防止通过hash改变触发协议
+              window.addEventListener('hashchange', function(e) {
+                if (isDangerousUrl(window.location.hash)) {
+                  console.warn('🚨 阻止危险hash变化:', window.location.hash);
+                  e.preventDefault();
+                  return false;
+                }
+              });
+              
+              // 阻止通过iframe的src属性设置危险URL
+              const originalCreateElement = document.createElement;
+              document.createElement = function(tagName) {
+                const element = originalCreateElement.call(this, tagName);
+                
+                if (tagName.toLowerCase() === 'iframe') {
+                  const originalSetAttribute = element.setAttribute;
+                  element.setAttribute = function(name, value) {
+                    if (name.toLowerCase() === 'src' && isDangerousUrl(value)) {
+                      console.warn('🚨 阻止iframe设置危险src:', value);
+                      return;
+                    }
+                    return originalSetAttribute.call(this, name, value);
+                  };
+                }
+                
+                return element;
+              };
+              
+              console.log('✅ 已注入增强协议拦截脚本');
+            }
+          `).catch(err => {
+            console.error('注入协议拦截脚本失败:', err);
+          });
+        });
+
+        // 处理导航事件 - 仅记录，不拦截
+        contents.on('will-navigate', (event, url) => {
+          console.log('webview即将导航到:', url);
+          // 允许所有导航正常进行
+        });
+
+        // 监听所有导航重定向 - 仅记录，不拦截
+        contents.on('will-redirect', (event, url) => {
+          console.log('webview即将重定向到:', url);
+          // 允许所有重定向正常进行
+        });
+
+        // 监听外部协议请求
+        contents.on('will-prevent-unload', (event) => {
+          console.log('webview尝试阻止卸载');
+        });
+
+        // 处理加载失败
+        contents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+          if (errorCode !== -3) { // -3是ERR_ABORTED，通常是正常的
+            console.error(`webview加载失败: ${errorCode} - ${errorDescription} - ${validatedURL}`);
+          }
+        });
+      }
+    );
+
+    // 生产环境也打开DevTools以便调试
+    // mainWindow.webContents.openDevTools();
+    // console.log("✅ 生产环境DevTools已打开");
+  } catch (err) {
+    console.error("创建窗口失败：", err);
+  }
+}
+
+// 🚫 移除单实例锁，因为它可能导致协议自动注册
+// 单实例锁已被移除以防止协议处理器自动注册
+console.log('� 已禁用单实例锁以防止协议注册');
+
+// 捕获顶层 promise 拒绝
+app
+  .whenReady()
+  .then(async () => {
+    // 🚫 在应用启动时重写全局shell.openExternal方法
+    const originalShellOpenExternal = shell.openExternal;
+    shell.openExternal = function(url: string, options?: any) {
+      const problematicProtocols = ['bytedance:', 'douyin:', 'toutiao:', 'xigua:', 'aweme:', 'snssdk:'];
+      const lowerUrl = url.toLowerCase();
+      
+      if (problematicProtocols.some(protocol => lowerUrl.startsWith(protocol))) {
+        console.warn('🚨 全局阻止shell.openExternal打开问题协议:', url);
+        return Promise.resolve();
+      }
+      
+      // 检查危险URL模式
+      const dangerousPatterns = [
+        /dispatch_message/i,
+        /openapp\./i,
+        /app\.link/i,
+        /deeplink/i,
+        /universal\.link/i,
+        /zijieapi\.com.*link/i,
+        /security\.zijieapi\.com/i,
+      ];
+      
+      if (dangerousPatterns.some(pattern => pattern.test(url))) {
+        console.warn('🚨 全局阻止shell.openExternal打开危险URL模式:', url);
+        return Promise.resolve();
+      }
+      
+      return originalShellOpenExternal.call(this, url, options);
+    };
+    console.log('✅ 已全局重写shell.openExternal方法');
+
+    // 🧹 强制清除可能已注册的问题协议处理器 - 更全面的清理
+    const allPossibleProtocols = [
+      'bytedance', 'toutiao', 'douyin', 'xigua', 'aweme', 'snssdk',
+      'bytedance-frontend', 'bytedance-service', 'bytedance-ads',
+      'douyin-fe', 'douyin-service', 'douyin-creator',
+      'multi-browser', 'multi-brower', // 防止自己的应用名被注册
+    ];
+    console.log('🔍 开始强制清理所有已注册的协议处理器...');
+    
+    for (const protocol of allPossibleProtocols) {
+      try {
+        // 无论是否已注册，都尝试移除
+        app.removeAsDefaultProtocolClient(protocol);
+        console.log(`✅ 已强制清理协议处理器: ${protocol}://`);
+      } catch (error) {
+        // 忽略错误，继续清理
+        console.log(`ℹ️ 协议清理: ${protocol}:// (${(error as Error)?.message || '未注册'})`);
+      }
+    }
+
+    // 🚫 完全禁用协议处理器注册API - 最强阻止措施
+    const originalSetAsDefaultProtocolClient = app.setAsDefaultProtocolClient;
+    const originalIsDefaultProtocolClient = app.isDefaultProtocolClient;
+    const originalRemoveAsDefaultProtocolClient = app.removeAsDefaultProtocolClient;
+    
+    app.setAsDefaultProtocolClient = function(protocol: string, ...args: any[]) {
+      console.warn(`🚨 完全阻止注册协议处理器: ${protocol}://`);
+      console.warn(`🚨 调用栈:`, new Error().stack);
+      return false; // 总是返回失败
+    };
+    
+    app.isDefaultProtocolClient = function(protocol: string, ...args: any[]) {
+      console.log(`ℹ️ 查询协议状态: ${protocol}:// - 返回false(未注册)`);
+      return false; // 总是返回未注册状态
+    };
+    
+    app.removeAsDefaultProtocolClient = function(protocol: string, ...args: any[]) {
+      console.log(`✅ 尝试移除协议处理器: ${protocol}:// - 已阻止`);
+      return true; // 假装移除成功
+    };
+
+    // 添加全局协议请求监听，用于调试
+    app.on('open-url', (event, url) => {
+      event.preventDefault();
+      console.warn('🚨 收到外部协议请求:', url);
+      console.warn('🚨 这可能是导致应用重复启动的原因');
+      // 完全阻止处理，不做任何操作
+    });
+
+    // 🚫 移除了second-instance监听器，因为单实例锁已被禁用
+
+    // 🧹 启动时清除所有浏览器实例的缓存数据 - 已禁用
+    // await clearAllBrowserInstanceCaches();
+
+    // 注册全局快捷键来开关DevTools
+    globalShortcut.register('F12', () => {
+      if (mainWindow && mainWindow.webContents) {
+        if (mainWindow.webContents.isDevToolsOpened()) {
+          mainWindow.webContents.closeDevTools();
+          console.log('✅ DevTools已关闭');
+        } else {
+          mainWindow.webContents.openDevTools();
+          console.log('✅ DevTools已打开');
+        }
+      }
+    });
+
+    // 注册另一个快捷键 Ctrl+Shift+I
+    globalShortcut.register('CommandOrControl+Shift+I', () => {
+      if (mainWindow && mainWindow.webContents) {
+        if (mainWindow.webContents.isDevToolsOpened()) {
+          mainWindow.webContents.closeDevTools();
+          console.log('✅ DevTools已关闭 (Ctrl+Shift+I)');
+        } else {
+          mainWindow.webContents.openDevTools();
+          console.log('✅ DevTools已打开 (Ctrl+Shift+I)');
+        }
+      }
+    });
+
+    console.log('✅ 已注册DevTools快捷键: F12 和 Ctrl+Shift+I');
+
+    // 🚫 命令行开关已在文件顶部设置，这里不再重复
+
+    // 🚫 完全禁用协议注册 - 不再注册任何协议处理器
+    // 这可以防止网页自动注册我们的应用为协议处理器
+    console.log('🚫 已禁用所有协议注册功能');
+
+    // 🚫 移除之前可能存在的协议处理逻辑
+    // 不再处理任何 open-url 事件（除了用于调试的监听器）
+
+    createWindow();
+  })
+  .catch((err) => console.error("应用启动失败：", err));
+
+app.on("window-all-closed", () => {
+  // 注销所有全局快捷键
+  globalShortcut.unregisterAll();
+  console.log('✅ 已注销所有全局快捷键');
+
+  if (process.platform !== "darwin") app.quit();
+});
+
+app.on("activate", () => {
+  if (BrowserWindow.getAllWindows().length === 0) createWindow();
+});
+
+ipcMain.handle("ping", async () => "pong from main process");
+
+// 清除指定 webContents 的缓存
+ipcMain.handle("clear-cache", async (_evt, wcId: number) => {
+  const wc = webContents.fromId(wcId);
+  if (wc) await wc.session.clearCache();
+  return true;
+});
+
+// 删除指定partition的存储文件夹和所有session数据（包括cookies）
+ipcMain.handle("delete-partition-storage", async (_evt, partitionName: string) => {
+  return await deletePartitionStorageFolder(partitionName);
+});
+
+// 在主进程中打开或创建 SQLite 数据库
+async function getDb(customPath?: string): Promise<any> {
+  let dbPath: string;
+
+  if (customPath && customPath.trim() !== '') {
+    // 如果指定了非空的自定义路径，处理相对路径和绝对路径
+    if (path.isAbsolute(customPath)) {
+      dbPath = customPath;
+    } else {
+      // 相对路径处理
+      if (process.env.NODE_ENV === "development") {
+        // 开发环境：相对于项目根目录
+        dbPath = path.join(process.cwd(), customPath);
+      } else {
+        // 生产环境：相对于应用资源目录
+        dbPath = path.join(process.resourcesPath, customPath);
+      }
+    }
+  } else {
+    // 默认数据库路径（用户数据目录）
+    dbPath = path.join(app.getPath("userData"), "app.db");
+  }
+
+  console.log(`数据库路径: ${dbPath}`);
+
+  // 确保数据库目录存在
+  const dbDir = path.dirname(dbPath);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+
+  return open({
+    filename: dbPath,
+    driver: sqlite3.Database,
+  });
+}
+
+// 存储数据库连接
+const dbConnections = new Map<string, any>();
+
+// SQLite API 实现
+// 打开数据库连接
+ipcMain.handle("sqlite-open", async (_event, filePath: string) => {
+  try {
+    const db = await getDb(filePath);
+    const connectionId = filePath;
+    dbConnections.set(connectionId, db);
+    return { success: true, connectionId };
+  } catch (error) {
+    console.error("Failed to open database:", error);
+    return { success: false, error: (error as Error).message };
+  }
+});
+
+// 执行 SQL 语句
+ipcMain.handle(
+  "sqlite-run",
+  async (_event, sql: string, params: any[] = []) => {
+    try {
+      const db = await getDb();
+      const result = await db.run(sql, params || []);
+      return { success: true, result };
+    } catch (error) {
+      console.error("Failed to run SQL:", error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+);
+
+// 执行 SQL 查询并返回所有结果
+ipcMain.handle(
+  "sqlite-all",
+  async (_event, sql: string, params: any[] = []) => {
+    try {
+      const db = await getDb();
+      const rows = await db.all(sql, params || []);
+      return { success: true, rows };
+    } catch (error) {
+      console.error("Failed to query SQL:", error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+);
+
+// 执行 SQL 查询并返回单个结果
+ipcMain.handle(
+  "sqlite-get",
+  async (_event, sql: string, params: any[] = []) => {
+    try {
+      const db = await getDb();
+      const row = await db.get(sql, params || []);
+      return { success: true, row };
+    } catch (error) {
+      console.error("Failed to get SQL result:", error);
+      return { success: false, error: (error as Error).message };
+    }
+  }
+);
+
+// RSA 加密处理器
+ipcMain.handle("encrypt-script", async (_event, text: string) => {
+  try {
+    const encrypted = encryptScript(text);
+    return { success: true, encrypted };
+  } catch (error) {
+    console.error("加密失败:", error);
+    return { success: false, error: (error as Error).message };
+  }
+});
+
+// RSA 解密处理器
+ipcMain.handle("decrypt-script", async (_event, encryptedText: string) => {
+  try {
+    const decrypted = decryptScript(encryptedText);
+    return { success: true, decrypted };
+  } catch (error) {
+    console.error("解密失败:", error);
+    return { success: false, error: (error as Error).message };
+  }
+});
+
+// 关闭应用程序处理器
+ipcMain.handle("close-app", async () => {
+  app.quit();
+});

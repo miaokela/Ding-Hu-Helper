@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>版本系统测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .version-info {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-left: 4px solid #007acc;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>版本系统测试</h1>
+        <div id="test-results"></div>
+    </div>
+
+    <script type="module">
+        // 模拟全局常量（使用当前的构建配置）
+        window.__BUILD_TIME__ = "1755436613187"; // 最新构建时间
+        window.__VERSION_TYPE__ = 'permanent';   // 永久版本
+
+        // 导入版本工具函数
+        import { 
+            getVersionName, 
+            getVersionConfig, 
+            calculateCountdown, 
+            formatCountdown,
+            formatDetailedCountdown,
+            isVersionExpired
+        } from './src/utils/version.ts';
+
+        const resultsDiv = document.getElementById('test-results');
+
+        function addResult(title, content, isSuccess = true) {
+            const div = document.createElement('div');
+            div.className = `test-result ${isSuccess ? 'success' : 'error'}`;
+            div.innerHTML = `<strong>${title}:</strong> ${content}`;
+            resultsDiv.appendChild(div);
+        }
+
+        try {
+            // 测试版本配置
+            const config = getVersionConfig();
+            addResult('版本配置', `类型: ${config.type}, 构建时间: ${new Date(config.buildTime).toLocaleString()}, 过期时间: ${config.expireTime}`);
+
+            // 测试版本名称
+            const versionName = getVersionName();
+            addResult('版本名称', versionName);
+
+            // 测试倒计时计算
+            const countdown = calculateCountdown();
+            addResult('倒计时信息', `过期状态: ${countdown.isExpired}, 剩余毫秒: ${countdown.totalRemainingMs}`);
+
+            // 测试格式化倒计时
+            const formattedCountdown = formatCountdown(countdown);
+            addResult('格式化倒计时', formattedCountdown || '(空)');
+
+            // 测试详细倒计时
+            const detailedCountdown = formatDetailedCountdown(countdown);
+            addResult('详细倒计时', detailedCountdown);
+
+            // 测试过期检查
+            const expired = isVersionExpired();
+            addResult('过期检查', expired ? '已过期' : '未过期');
+
+            // 验证永久版本特性
+            if (config.type === 'PERMANENT' && countdown.totalRemainingMs === Infinity && !expired) {
+                addResult('永久版本验证', '✅ 所有永久版本特性正常工作');
+            } else {
+                addResult('永久版本验证', '❌ 永久版本特性异常', false);
+            }
+
+        } catch (error) {
+            addResult('测试错误', error.message, false);
+        }
+    </script>
+</body>
+</html>

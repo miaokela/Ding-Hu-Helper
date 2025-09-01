@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>盯户助手 - 双眼科技感Logo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #0a0e27 0%, #16213e 100%);
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+            min-height: 100vh;
+            color: white;
+        }
+
+        .title {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 18px;
+        }
+
+        .logo-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 50px;
+            border-radius: 24px;
+            box-shadow: 
+                0 20px 40px rgba(0, 0, 0, 0.4),
+                0 0 80px rgba(59, 130, 246, 0.1);
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 30px rgba(59, 130, 246, 0.4);
+        }
+
+        .size-preview {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+            margin-top: 30px;
+        }
+
+        .preview-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .size-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">盯户助手</div>
+    <div class="subtitle">双眼科技感设计 | 现代极简风格 | 蓝色调</div>
+    
+    <div class="logo-container">
+        <svg id="ding-logo" width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- 主背景渐变 -->
+                <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#1e3a8a;stop-opacity:1" />
+                    <stop offset="50%" style="stop-color:#3b82f6;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#1d4ed8;stop-opacity:1" />
+                </linearGradient>
+                
+                <!-- 眼睛外环渐变 -->
+                <linearGradient id="eyeRingGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#60a5fa;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+                </linearGradient>
+                
+                <!-- 眼球渐变 -->
+                <radialGradient id="eyeballGradient" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" style="stop-color:#f8fafc;stop-opacity:1" />
+                    <stop offset="80%" style="stop-color:#e2e8f0;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#cbd5e1;stop-opacity:1" />
+                </radialGradient>
+                
+                <!-- 瞳孔渐变 -->
+                <radialGradient id="pupilGradient" cx="30%" cy="30%" r="70%">
+                    <stop offset="0%" style="stop-color:#1e293b;stop-opacity:1" />
+                    <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+                </radialGradient>
+                
+                <!-- 发光滤镜 -->
+                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge> 
+                        <feMergeNode in="coloredBlur"/>
+                        <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                </filter>
+                
+                <!-- 阴影滤镜 -->
+                <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.3"/>
+                </filter>
+                
+                <!-- 内阴影滤镜 -->
+                <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feOffset dx="0" dy="2"/>
+                    <feGaussianBlur stdDeviation="4" result="offset-blur"/>
+                    <feFlood flood-color="#000000" flood-opacity="0.2"/>
+                    <feComposite in2="offset-blur" operator="in"/>
+                    <feMerge> 
+                        <feMergeNode in="SourceGraphic"/>
+                        <feMergeNode/>
+                    </feMerge>
+                </filter>
+            </defs>
+            
+            <!-- 主背景 - 圆角正方形 -->
+            <rect x="30" y="30" width="240" height="240" rx="60" ry="60" 
+                  fill="url(#bgGradient)" 
+                  filter="url(#shadow)" 
+                  stroke="rgba(96, 165, 250, 0.3)" 
+                  stroke-width="2"/>
+            
+            <!-- 内层装饰框 -->
+            <rect x="45" y="45" width="210" height="210" rx="45" ry="45" 
+                  fill="none" 
+                  stroke="rgba(255, 255, 255, 0.1)" 
+                  stroke-width="1" 
+                  stroke-dasharray="10,5"/>
+            
+                        <!-- 左眼外环 -->
+            <circle cx="110" cy="130" r="32" 
+                    fill="url(#eyeRingGradient)" 
+                    filter="url(#glow)"/>
+            
+            <!-- 左眼球 -->
+            <circle cx="110" cy="130" r="25" 
+                    fill="url(#eyeballGradient)" 
+                    filter="url(#innerShadow)"/>
+            
+            <!-- 左瞳孔 -->
+            <circle cx="110" cy="130" r="14" 
+                    fill="url(#pupilGradient)"/>
+            
+            <!-- 左眼高光 -->
+            <ellipse cx="106" cy="126" rx="5" ry="7" 
+                     fill="rgba(255, 255, 255, 0.8)"/>
+            <circle cx="114" cy="128" r="2" 
+                    fill="rgba(255, 255, 255, 0.6)"/>
+            
+            <!-- 右眼外环 -->
+            <circle cx="190" cy="130" r="32" 
+                    fill="url(#eyeRingGradient)" 
+                    filter="url(#glow)"/>
+            
+            <!-- 右眼球 -->
+            <circle cx="190" cy="130" r="25" 
+                    fill="url(#eyeballGradient)" 
+                    filter="url(#innerShadow)"/>
+            
+            <!-- 右眼瞳孔 -->
+            <circle cx="190" cy="130" r="14" 
+                    fill="url(#pupilGradient)"/>
+            
+            <!-- 右眼高光 -->
+            <ellipse cx="186" cy="126" rx="5" ry="7" 
+                     fill="rgba(255, 255, 255, 0.8)"/>
+            <circle cx="194" cy="128" r="2" 
+                    fill="rgba(255, 255, 255, 0.6)"/>
+            
+            <!-- 中央连接线（科技感） -->
+            <line x1="142" y1="130" x2="158" y2="130" 
+                  stroke="rgba(96, 165, 250, 0.6)" 
+                  stroke-width="3" 
+                  stroke-linecap="round">
+                <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+            </line>
+            
+            <!-- 下方装饰元素（表示"目"字的横线） -->
+            <rect x="90" y="190" width="120" height="8" rx="4" 
+                  fill="rgba(96, 165, 250, 0.8)" 
+                  filter="url(#glow)">
+                <animate attributeName="opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite"/>
+            </rect>
+            
+            <rect x="100" y="210" width="100" height="6" rx="3" 
+                  fill="rgba(96, 165, 250, 0.6)" 
+                  filter="url(#glow)">
+                <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.5s" repeatCount="indefinite"/>
+            </rect>
+            
+            <!-- 角落装饰点 -->
+            <circle cx="70" cy="70" r="3" fill="rgba(96, 165, 250, 0.7)">
+                <animate attributeName="r" values="2;4;2" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="230" cy="70" r="3" fill="rgba(96, 165, 250, 0.7)">
+                <animate attributeName="r" values="2;4;2" dur="2.2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="70" cy="230" r="3" fill="rgba(96, 165, 250, 0.7)">
+                <animate attributeName="r" values="2;4;2" dur="1.8s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="230" cy="230" r="3" fill="rgba(96, 165, 250, 0.7)">
+                <animate attributeName="r" values="2;4;2" dur="2.1s" repeatCount="indefinite"/>
+            </circle>
+            
+            <!-- 扫描线效果 -->
+            <rect x="30" y="125" width="240" height="2" fill="rgba(96, 165, 250, 0.3)">
+                <animate attributeName="opacity" values="0;0.8;0" dur="4s" repeatCount="indefinite"/>
+                <animate attributeName="height" values="1;3;1" dur="4s" repeatCount="indefinite"/>
+            </rect>
+        </svg>
+    </div>
+
+    <div class="size-preview">
+        <div class="preview-item">
+            <div class="size-label">512x512</div>
+            <svg width="120" height="120" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+                <use href="#ding-logo"/>
+            </svg>
+        </div>
+        <div class="preview-item">
+            <div class="size-label">256x256</div>
+            <svg width="80" height="80" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+                <use href="#ding-logo"/>
+            </svg>
+        </div>
+        <div class="preview-item">
+            <div class="size-label">128x128</div>
+            <svg width="60" height="60" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+                <use href="#ding-logo"/>
+            </svg>
+        </div>
+        <div class="preview-item">
+            <div class="size-label">64x64</div>
+            <svg width="40" height="40" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+                <use href="#ding-logo"/>
+            </svg>
+        </div>
+        <div class="preview-item">
+            <div class="size-label">32x32</div>
+            <svg width="24" height="24" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+                <use href="#ding-logo"/>
+            </svg>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button onclick="downloadSVG()">📥 下载 SVG</button>
+        <button onclick="downloadPNG(512)">🖼️ 下载 PNG (512px)</button>
+        <button onclick="downloadPNG(256)">🖼️ 下载 PNG (256px)</button>
+        <button onclick="toggleAnimation()">✨ 切换动画</button>
+    </div>
+
+    <script>
+        let animationEnabled = true;
+
+        function toggleAnimation() {
+            animationEnabled = !animationEnabled;
+            const animatedElements = document.querySelectorAll('animate');
+            animatedElements.forEach(el => {
+                if (animationEnabled) {
+                    el.beginElement();
+                } else {
+                    el.endElement();
+                }
+            });
+        }
+
+        function downloadSVG() {
+            const svg = document.getElementById('ding-logo');
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const svgUrl = URL.createObjectURL(svgBlob);
+            
+            const downloadLink = document.createElement('a');
+            downloadLink.href = svgUrl;
+            downloadLink.download = 'ding-assistant-dual-eyes.svg';
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(svgUrl);
+        }
+
+        function downloadPNG(size = 512) {
+            const svg = document.getElementById('ding-logo');
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+            
+            canvas.width = size;
+            canvas.height = size;
+            
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
+            const url = URL.createObjectURL(svgBlob);
+            
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0, size, size);
+                const pngUrl = canvas.toDataURL('image/png');
+                
+                const downloadLink = document.createElement('a');
+                downloadLink.href = pngUrl;
+                downloadLink.download = `ding-assistant-dual-eyes-${size}px.png`;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                
+                URL.revokeObjectURL(url);
+            };
+            
+            img.src = url;
+        }
+
+        // 眼球跟随鼠标效果
+        document.addEventListener('mousemove', function(e) {
+            const logo = document.getElementById('ding-logo');
+            const rect = logo.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+            
+            const angle = Math.atan2(mouseY - centerY, mouseX - centerX);
+            const distance = Math.min(3, Math.sqrt(Math.pow(mouseX - centerX, 2) + Math.pow(mouseY - centerY, 2)) / 50);
+            
+            const offsetX = Math.cos(angle) * distance;
+            const offsetY = Math.sin(angle) * distance;
+            
+            // 移动左眼瞳孔
+            const leftPupil = logo.querySelector('circle[cx="110"][cy="130"][r="14"]');
+            leftPupil.setAttribute('cx', 110 + offsetX);
+            leftPupil.setAttribute('cy', 130 + offsetY);
+            
+            // 移动右眼瞳孔
+            const rightPupil = logo.querySelector('circle[cx="190"][cy="130"][r="14"]');
+            rightPupil.setAttribute('cx', 190 + offsetX);
+            rightPupil.setAttribute('cy', 130 + offsetY);
+        });
+    </script>
+</body>
+</html>

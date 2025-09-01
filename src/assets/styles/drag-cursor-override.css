@@ -1,0 +1,44 @@
+/* 拖拽光标强制覆盖样式 */
+.drag-force-cursor-move,
+.drag-force-cursor-move *,
+.drag-force-cursor-move:hover,
+.drag-force-cursor-move:active {
+  cursor: move !important;
+}
+
+.drag-force-cursor-copy,
+.drag-force-cursor-copy *,
+.drag-force-cursor-copy:hover,
+.drag-force-cursor-copy:active {
+  cursor: copy !important;
+}
+
+/* 全局拖拽时覆盖所有元素的光标 */
+body.dragging-active {
+  cursor: move !important;
+}
+
+body.dragging-active *,
+body.dragging-active *:hover,
+body.dragging-active *:active {
+  cursor: move !important;
+}
+
+body.dragging-detached {
+  cursor: copy !important;
+}
+
+body.dragging-detached *,
+body.dragging-detached *:hover,
+body.dragging-detached *:active {
+  cursor: copy !important;
+}
+
+/* 禁用用户选择防止拖拽干扰 */
+body.dragging-active,
+body.dragging-detached {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+}

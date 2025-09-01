@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>输入框和版本配置测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        input, textarea { margin: 5px; padding: 8px; width: 200px; }
+        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>输入框和版本配置测试</h1>
+    
+    <div class="test-section">
+        <h2>输入框测试</h2>
+        <p>请在下面的输入框中输入文字测试：</p>
+        <input type="text" placeholder="测试输入框1" />
+        <br>
+        <input type="text" placeholder="测试输入框2" />
+        <br>
+        <textarea placeholder="测试文本域"></textarea>
+        <br>
+        <button onclick="testInputFocus()">手动聚焦测试</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>版本配置测试</h2>
+        <div id="version-info"></div>
+        <button onclick="testVersionConfig()">测试版本配置</button>
+    </div>
+    
+    <div class="result" id="test-results"></div>
+    
+    <script>
+        // 测试输入框聚焦
+        function testInputFocus() {
+            const inputs = document.querySelectorAll('input, textarea');
+            inputs.forEach((input, index) => {
+                setTimeout(() => {
+                    input.focus();
+                    input.style.backgroundColor = '#ffffcc';
+                    setTimeout(() => {
+                        input.style.backgroundColor = '';
+                    }, 500);
+                }, index * 600);
+            });
+        }
+        
+        // 测试版本配置
+        function testVersionConfig() {
+            const versionInfo = document.getElementById('version-info');
+            const results = [];
+            
+            // 检查全局变量
+            try {
+                results.push(`__BUILD_TIME__: ${typeof __BUILD_TIME__ !== 'undefined' ? __BUILD_TIME__ : '未定义'}`);
+            } catch(e) {
+                results.push(`__BUILD_TIME__: 无法访问 (${e.message})`);
+            }
+            
+            try {
+                results.push(`__VERSION_TYPE__: ${typeof __VERSION_TYPE__ !== 'undefined' ? __VERSION_TYPE__ : '未定义'}`);
+            } catch(e) {
+                results.push(`__VERSION_TYPE__: 无法访问 (${e.message})`);
+            }
+            
+            // 检查window对象
+            if (window.__BUILD_TIME__) {
+                results.push(`window.__BUILD_TIME__: ${window.__BUILD_TIME__}`);
+            }
+            if (window.__VERSION_TYPE__) {
+                results.push(`window.__VERSION_TYPE__: ${window.__VERSION_TYPE__}`);
+            }
+            
+            versionInfo.innerHTML = results.join('<br>');
+        }
+        
+        // 页面加载时自动测试
+        window.addEventListener('load', () => {
+            testVersionConfig();
+            
+            // 输入框事件监听测试
+            const inputs = document.querySelectorAll('input, textarea');
+            inputs.forEach((input, index) => {
+                input.addEventListener('focus', () => {
+                    console.log(`输入框 ${index + 1} 获得焦点`);
+                });
+                input.addEventListener('blur', () => {
+                    console.log(`输入框 ${index + 1} 失去焦点`);
+                });
+                input.addEventListener('input', (e) => {
+                    console.log(`输入框 ${index + 1} 输入内容:`, e.target.value);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

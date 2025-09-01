@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>协议拦截测试页面</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            margin: 20px 0;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-link {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 15px;
+            background: #007AFF;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.2s;
+        }
+        .test-link:hover {
+            background: #0056CC;
+        }
+        .dangerous {
+            background: #FF3B30;
+        }
+        .dangerous:hover {
+            background: #D70015;
+        }
+        .safe {
+            background: #34C759;
+        }
+        .safe:hover {
+            background: #248A3D;
+        }
+        .test-button {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 15px;
+            background: #FF9500;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .test-button:hover {
+            background: #CC7700;
+        }
+        .log {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: Monaco, Consolas, monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 协议拦截测试页面</h1>
+    <p>此页面用于测试应用的协议拦截功能是否正常工作。点击下方链接和按钮，观察控制台输出。</p>
+
+    <div class="test-section">
+        <h2>🚨 危险协议链接测试（应该被拦截）</h2>
+        <p>以下链接应该被拦截，不会触发系统弹窗或打开外部应用：</p>
+        
+        <a href="bytedance://dispatch_message/" class="test-link dangerous">字节跳动协议</a>
+        <a href="douyin://profile/user/" class="test-link dangerous">抖音协议</a>
+        <a href="toutiao://article/123456/" class="test-link dangerous">头条协议</a>
+        <a href="xigua://video/789" class="test-link dangerous">西瓜视频协议</a>
+        <a href="aweme://user/123" class="test-link dangerous">aweme协议</a>
+        <a href="snssdk://main" class="test-link dangerous">snssdk协议</a>
+        <a href="intent://main" class="test-link dangerous">Intent协议</a>
+        <a href="market://details?id=com.example" class="test-link dangerous">Market协议</a>
+    </div>
+
+    <div class="test-section">
+        <h2>🔗 危险URL模式测试（应该被拦截）</h2>
+        <p>以下URL包含危险模式，应该被拦截：</p>
+        
+        <a href="https://security.zijieapi.com/api/link?url=bytedance://test" class="test-link dangerous">字节API链接</a>
+        <a href="https://example.com/openapp.do?scheme=douyin" class="test-link dangerous">openapp链接</a>
+        <a href="https://example.com/deeplink?target=bytedance://main" class="test-link dangerous">deeplink链接</a>
+        <a href="https://example.com/dispatch_message?data=test" class="test-link dangerous">dispatch_message链接</a>
+    </div>
+
+    <div class="test-section">
+        <h2>✅ 安全链接测试（应该正常工作）</h2>
+        <p>以下链接是安全的，应该正常工作：</p>
+        
+        <a href="https://www.baidu.com" class="test-link safe">百度</a>
+        <a href="https://www.google.com" class="test-link safe">Google</a>
+        <a href="https://github.com" class="test-link safe">GitHub</a>
+        <a href="mailto:test@example.com" class="test-link safe">邮件链接</a>
+    </div>
+
+    <div class="test-section">
+        <h2>⚙️ JavaScript测试</h2>
+        <p>测试通过JavaScript触发的协议跳转：</p>
+        
+        <button class="test-button" onclick="testWindowOpen()">window.open危险协议</button>
+        <button class="test-button" onclick="testLocationHref()">location.href危险协议</button>
+        <button class="test-button" onclick="testCreateIframe()">iframe危险src</button>
+        <button class="test-button" onclick="testSafeLink()">安全链接测试</button>
+        
+        <div id="log" class="log">
+            <div>📝 测试日志将显示在这里...</div>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const div = document.createElement('div');
+            div.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            logDiv.appendChild(div);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function testWindowOpen() {
+            log('🧪 测试 window.open("bytedance://test")');
+            try {
+                const result = window.open('bytedance://test', '_blank');
+                if (result === null) {
+                    log('✅ window.open 被成功拦截（返回null）');
+                } else {
+                    log('❌ window.open 未被拦截');
+                }
+            } catch (error) {
+                log('✅ window.open 抛出异常被拦截: ' + error.message);
+            }
+        }
+
+        function testLocationHref() {
+            log('🧪 测试 location.href = "douyin://profile"');
+            try {
+                const oldHref = location.href;
+                location.href = 'douyin://profile';
+                // 如果URL没有改变，说明被拦截了
+                setTimeout(() => {
+                    if (location.href === oldHref) {
+                        log('✅ location.href 被成功拦截');
+                    } else {
+                        log('❌ location.href 未被拦截');
+                    }
+                }, 100);
+            } catch (error) {
+                log('✅ location.href 抛出异常被拦截: ' + error.message);
+            }
+        }
+
+        function testCreateIframe() {
+            log('🧪 测试创建iframe并设置危险src');
+            try {
+                const iframe = document.createElement('iframe');
+                iframe.setAttribute('src', 'toutiao://article/123');
+                document.body.appendChild(iframe);
+                
+                setTimeout(() => {
+                    if (iframe.src === '' || iframe.src === 'about:blank') {
+                        log('✅ iframe src 被成功拦截');
+                    } else {
+                        log('❌ iframe src 未被拦截: ' + iframe.src);
+                    }
+                    document.body.removeChild(iframe);
+                }, 100);
+            } catch (error) {
+                log('✅ iframe 创建被拦截: ' + error.message);
+            }
+        }
+
+        function testSafeLink() {
+            log('🧪 测试安全链接');
+            try {
+                const result = window.open('https://www.baidu.com', '_blank');
+                if (result) {
+                    log('✅ 安全链接正常工作');
+                    result.close();
+                } else {
+                    log('⚠️ 安全链接被阻止（可能是弹窗拦截器）');
+                }
+            } catch (error) {
+                log('❌ 安全链接出错: ' + error.message);
+            }
+        }
+
+        // 监听点击事件
+        document.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A' && e.target.href) {
+                log('🔍 点击链接: ' + e.target.href);
+            }
+        });
+
+        log('📱 页面加载完成，可以开始测试');
+    </script>
+</body>
+</html>

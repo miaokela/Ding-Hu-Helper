@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>标签页拖拽测试 - webview刷新修复验证</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #fff;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        .test-section {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .test-section h2 {
+            color: #FFD700;
+            margin-bottom: 15px;
+        }
+        .success {
+            color: #4CAF50;
+            font-weight: bold;
+        }
+        .test-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+        .note {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.5);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 14px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%;
+            height: 0;
+            overflow: hidden;
+            max-width: 100%;
+            background: #000;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+            border-radius: 10px;
+        }
+        .test-form {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .test-form input, .test-form textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 16px;
+        }
+        .test-form input::placeholder, .test-form textarea::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .timestamp {
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 3px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 标签页拖拽测试页面</h1>
+        <h2 style="text-align: center; margin-bottom: 30px;">验证webview刷新修复效果</h2>
+
+        <div class="test-section">
+            <h2>✅ 修复总结</h2>
+            <div class="test-item">
+                <strong>问题：</strong>拖拽重新排序tab时，webview会刷新，导致页面重新加载
+            </div>
+            <div class="test-item">
+                <strong>解决：</strong>分离webview DOM渲染与tab排序逻辑，使用独立的排序索引
+            </div>
+            <div class="test-item">
+                <strong>效果：</strong>拖拽排序时webview内容完全保持，不会刷新
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📝 测试用表单</h2>
+            <p>在下面的表单中输入内容，然后拖拽此标签页到其他位置，验证内容是否保持：</p>
+            <div class="test-form">
+                <input type="text" placeholder="请在此输入测试文本..." id="testInput">
+                <textarea placeholder="请在此输入多行测试内容..." rows="4" id="testTextarea"></textarea>
+                <div>
+                    <label style="color: #FFD700;">输入时间戳：</label>
+                    <span class="timestamp" id="timestamp">等待输入...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🎥 测试用视频</h2>
+            <p>播放下面的视频，然后拖拽此标签页，验证视频是否会中断：</p>
+            <div class="video-container">
+                <iframe 
+                    src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
+                    title="Test Video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🔧 技术实现</h2>
+            <div class="code">
+// 核心修改：分离webview渲染与tab排序
+const allCreatedTabs = reactive&lt;Tab[]&gt;([]);  // 稳定的webview DOM
+const tabOrderMap = reactive&lt;Record&lt;number, number&gt;&gt;({}); // 排序索引
+
+// webview渲染使用稳定的数组
+&lt;webview v-for="tab in allCreatedTabs" /&gt;
+
+// 排序只修改索引，不修改DOM结构
+function reorderTabs(fromIndex, toIndex) {
+  // 更新排序索引而不是数组顺序
+  tabOrderMap[draggedTab.id] = newOrderIndex;
+}
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>🧪 测试步骤</h2>
+            <div class="test-item">
+                <strong>步骤1：</strong>在上面的表单中输入一些文本内容
+            </div>
+            <div class="test-item">
+                <strong>步骤2：</strong>播放测试视频，让其播放一段时间
+            </div>
+            <div class="test-item">
+                <strong>步骤3：</strong>拖拽此标签页到其他位置进行重新排序
+            </div>
+            <div class="test-item">
+                <strong>预期结果：</strong>表单内容保持，视频继续播放不中断
+            </div>
+        </div>
+
+        <div class="note">
+            <strong>📌 注意：</strong>
+            本修复确保在拖拽重新排序标签页时：
+            <ul>
+                <li>webview内容完全保持，不会刷新</li>
+                <li>表单输入内容不会丢失</li>
+                <li>视频播放不会中断</li>
+                <li>页面滚动位置保持不变</li>
+                <li>所有交互状态都得以保留</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 实时状态</h2>
+            <div id="status">
+                <div>页面加载时间：<span class="timestamp" id="loadTime"></span></div>
+                <div>最后活动时间：<span class="timestamp" id="lastActivity"></span></div>
+                <div>页面刷新次数：<span class="timestamp" id="refreshCount">0</span></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 记录页面状态，用于验证是否发生刷新
+        let refreshCount = parseInt(sessionStorage.getItem('refreshCount') || '0') + 1;
+        sessionStorage.setItem('refreshCount', refreshCount.toString());
+        
+        document.getElementById('loadTime').textContent = new Date().toLocaleTimeString();
+        document.getElementById('refreshCount').textContent = refreshCount;
+        
+        function updateActivity() {
+            document.getElementById('lastActivity').textContent = new Date().toLocaleTimeString();
+        }
+        
+        // 监听输入事件
+        document.getElementById('testInput').addEventListener('input', function(e) {
+            updateActivity();
+            document.getElementById('timestamp').textContent = new Date().toLocaleTimeString();
+            
+            // 保存输入内容到sessionStorage
+            sessionStorage.setItem('testInput', e.target.value);
+        });
+        
+        document.getElementById('testTextarea').addEventListener('input', function(e) {
+            updateActivity();
+            sessionStorage.setItem('testTextarea', e.target.value);
+        });
+        
+        // 恢复之前的输入内容
+        document.getElementById('testInput').value = sessionStorage.getItem('testInput') || '';
+        document.getElementById('testTextarea').value = sessionStorage.getItem('testTextarea') || '';
+        
+        // 如果有内容，更新时间戳
+        if (document.getElementById('testInput').value) {
+            document.getElementById('timestamp').textContent = '内容已恢复';
+        }
+        
+        // 每秒更新活动时间
+        setInterval(updateActivity, 1000);
+        
+        // 检测页面是否在拖拽后保持状态
+        window.addEventListener('focus', function() {
+            updateActivity();
+            console.log('页面重新获得焦点，检查状态保持情况');
+        });
+    </script>
+</body>
+</html>
